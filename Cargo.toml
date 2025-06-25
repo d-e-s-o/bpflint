@@ -9,14 +9,34 @@ name = "bpflint"
 version = "0.0.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# We misuse a feature here to actually prepare the WASM part of the
+# project. Ideally we could use something along the lines of a
+# post-build stage, but discussions surrounding that feature are still
+# ongoing (https://github.com/rust-lang/cargo/issues/545).
+deploy = []
+
 [build-dependencies]
 anyhow = "1.0"
+wasm-bindgen-cli-support = { version = "0.2", default-features = false }
+
+[target.'cfg(target_arch = "wasm32")'.build-dependencies]
+wasm-bindgen-cli-support = { version = "0.2", default-features = false }
 
 [dependencies]
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
+tree-sitter-c = { version = "0.24", git = "https://github.com/d-e-s-o/tree-sitter-c.git", branch = "topic/wasm" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tree-sitter = "0.25"
-tree-sitter-c = "0.24"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tree-sitter = { package = "tree-sitter-c2rust", version = "0.25" }
+wasm-bindgen = "0.2"
 
 [lints]
 workspace = true

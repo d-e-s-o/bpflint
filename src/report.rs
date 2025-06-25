@@ -1,9 +1,16 @@
 use std::io;
 use std::path::Path;
+#[cfg(target_arch = "wasm32")]
+use std::path::PathBuf;
 
 use anyhow::Result;
 
 use tracing::warn;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::JsValue;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::LintMatch;
 
@@ -32,7 +39,7 @@ pub fn report_terminal(
         range,
     } = r#match;
 
-    writeln!(writer, "warning: [{lint_name}] {message}",)?;
+    writeln!(writer, "warning: [{lint_name}] {message}")?;
     if range.start_point.row == range.end_point.row {
         let row = range.start_point.row;
         let col = range.start_point.column;
@@ -72,6 +79,18 @@ pub fn report_terminal(
         warn!("multi-line reporting is not yet supported");
     }
     Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn report_terminal_wasm(
+    r#match: LintMatch,
+    code: Vec<u8>,
+    path: PathBuf,
+    writer: &mut dyn io::Write,
+) -> Result<(), JsValue> {
+    report_terminal(&r#match, &code, &path, writer)
+        .map_err(|err| JsValue::from_str(&format!("{:?}", err)))
 }
 
 
