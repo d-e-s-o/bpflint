@@ -17,7 +17,7 @@ fn is_alphanumeric_minus(s: &str) -> bool {
     s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
 }
 
-fn main() -> Result<()> {
+fn generate_lints() -> Result<()> {
     let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let out_dir =
         env::var_os("OUT_DIR").context("failed to find `OUT_DIR` environment variable")?;
@@ -75,6 +75,11 @@ fn main() -> Result<()> {
     for lint_var in lint_vars {
         writeln!(&mut lints_rs_file, "    {lint_var},")?;
     }
-    writeln!(&mut lints_rs_file, r#"];"#,)?;
+    writeln!(&mut lints_rs_file, r#"];"#)?;
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let () = generate_lints()?;
     Ok(())
 }
