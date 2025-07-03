@@ -38,8 +38,9 @@
 
     <div class="section">
       <label for="filePath">Local file:</label>
-      <input type="text" id="filePath" value="" style="width: 50%;">
-      <input type="file" id="fileInput" accept=".c,.cc,.cpp,.cxx,.h,.hpp">
+      <input type="text" id="filePath" hint="No file select..." style="width: 50%; readonly">
+      <input type="file" id="fileInput" accept=".c,.cc,.cpp,.cxx,.h,.hpp" style="display: none" />
+      <button id="selectFileButton">Select file</button>
     </div>
 
     <div class="section">
@@ -56,7 +57,13 @@
 
       await init('./pkg/bpflint_bg.wasm');
       const fileInput = document.getElementById('fileInput');
+      const filePath = document.getElementById('filePath');
       const lintMessages = document.getElementById('lintMessages');
+      const selectFileButton = document.getElementById('selectFileButton');
+
+      selectFileButton.addEventListener('click', () => {
+        fileInput.click();
+      });
 
       function lint(code, file) {
         try {
@@ -66,8 +73,10 @@
           } else {
             lintMessages.value = "No problems detected";
           }
+          filePath.textContent = file;
           errorBox.textContent = '';
         } catch (err) {
+          filePath.textContent = '';
           lintMessages.value = '';
           errorBox.textContent = 'Failed to lint: ' + err;
         }
