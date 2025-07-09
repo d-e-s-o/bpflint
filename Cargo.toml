@@ -48,7 +48,7 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false }
 [dependencies]
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-tree-sitter-bpf-c = "0.1"
+tree-sitter-bpf-c = "0.2"
 web-sys = { version = "0.3", features = ['console'], optional = true }
 
 [dev-dependencies]
