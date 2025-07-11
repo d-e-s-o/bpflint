@@ -1,4 +1,28 @@
 //! A linter for BPF C code.
+//!
+//! At the source code level, individual lints can be disabled with
+//! source code comments of the form
+//! ```c
+//! /* bpflint: disable=probe-read */
+//! bpf_probe_read(/* ... */);
+//! ```
+//!
+//! In this instance, `probe-read` is the name of the lint to disable.
+//!
+//! Entire blocks can be annotated as well:
+//! ```c
+//! /* bpflint: disable=probe-read */
+//! void handler(void) {
+//!      void *dst = /* ... */
+//!      bpf_probe_read(dst, /* ... */);
+//! }
+//! ```
+//!
+//! In the above examples, none of the instances of `bpf_probe_read`
+//! will be flagged.
+//!
+//! The directive `bpflint: disable=all` acts as a catch-all, disabling
+//! reporting of all lints.
 
 #[cfg(target_arch = "wasm32")]
 #[macro_use]

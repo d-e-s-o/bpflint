@@ -1,8 +1,11 @@
+use std::str;
+
 use anyhow::Context as _;
 use anyhow::Result;
 
 use tracing::warn;
 
+use tree_sitter::Node;
 use tree_sitter::Parser;
 use tree_sitter::Query;
 use tree_sitter::QueryCursor;
@@ -74,6 +77,51 @@ pub struct LintMatch {
 }
 
 
+/// Walk the syntax tree, checking if a comment node that disable the
+/// given lint is present.
+fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
+    loop {
+        // Walk all previous siblings of the current node.
+        if let Some(s) = node.prev_sibling() {
+            if s.kind() == "comment" {
+                let comment = &code[s.start_byte()..s.end_byte()];
+                if let Ok(comment) = str::from_utf8(comment) {
+                    // The comment node will still contain the actual
+                    // comment syntax, unfortunately.
+                    let comment = comment.trim_start_matches("//");
+                    let comment = comment.trim_start_matches("/*");
+                    let comment = comment.trim_end_matches("*/");
+                    let comment = comment.trim();
+
+                    if let Some(comment) = comment.strip_prefix("bpflint:") {
+                        let directive = comment.trim();
+                        match directive.strip_prefix("disable=") {
+                            Some("all") => break true,
+                            Some(disable) if disable == lint_name => break true,
+                            _ => (),
+                        }
+                    }
+                } else {
+                    // If it's not valid UTF-8 it can't be a comment for
+                    // us to consider.
+                    warn!(
+                        "encountered invalid UTF-8 in code comment at bytes `{}..{}`",
+                        s.start_byte(),
+                        s.end_byte()
+                    );
+                }
+            }
+        }
+
+        // Move one level up and repeat.
+        match node.parent() {
+            Some(parent) => node = parent,
+            None => break false,
+        }
+    }
+}
+
+
 fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Result<Vec<LintMatch>> {
     let query =
         Query::new(&LANGUAGE.into(), lint_src).with_context(|| "failed to compile lint query")?;
@@ -82,6 +130,10 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
     let mut matches = query_cursor.matches(&query, tree.root_node(), code);
     while let Some(m) = matches.next() {
         for capture in m.captures {
+            if is_lint_disabled(lint_name, capture.node, code) {
+                continue;
+            }
+
             let settings = query.property_settings(m.pattern_index);
             let setting = settings
                 .iter()
@@ -152,6 +204,17 @@ mod tests {
     use super::*;
 
     use crate::Point;
+
+
+    static LINT_FOO: (&str, &str) = (
+        "foo",
+        r#"
+(call_expression
+    function: (identifier) @function (#eq? @function "foo")
+    (#set! "message" "foo")
+)
+        "#,
+    );
 
 
     /// Check that a missing `message` property is being flagged
@@ -229,13 +292,7 @@ int handle__sched_switch(u64 *ctx)
     /// Check that reported matches are sorted by line number.
     #[test]
     fn sorted_match_reporting() {
-        let lint1 = r#"
-(call_expression
-    function: (identifier) @function (#eq? @function "foo")
-    (#set! "message" "foo")
-)
-        "#;
-        let lint2 = r#"
+        let lint_bar = r#"
 (call_expression
     function: (identifier) @function (#eq? @function "bar")
     (#set! "message" "bar")
@@ -245,9 +302,73 @@ int handle__sched_switch(u64 *ctx)
 bar();
 foo();
 "#;
-        let matches = lint_multi(code.as_bytes(), &[("foo", lint1), ("bar", lint2)]).unwrap();
+        let matches = lint_multi(code.as_bytes(), &[LINT_FOO, ("bar", lint_bar)]).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
         assert_eq!(matches[1].lint_name, "foo");
+    }
+
+    /// Check that we can disable lints by name for a given statement.
+    #[test]
+    fn lint_disabling() {
+        let code = r#"
+/* bpflint: disable=foo */
+foo();
+// bpflint: disable=foo
+foo();
+// bpflint: disable=all
+foo();
+"#;
+        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        assert_eq!(matches.len(), 0, "{matches:?}");
+    }
+
+    /// Check that we can disable lints by name for a given block.
+    #[test]
+    fn lint_disabling_recursive() {
+        let code = r#"
+/* bpflint: disable=foo */
+{
+    {
+        foo();
+    }
+}
+"#;
+        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        assert_eq!(matches.len(), 0, "{matches:?}");
+
+        let code = r#"
+/* bpflint: disable=foo */
+void test_fn(void) {
+    foo();
+}
+"#;
+        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        assert_eq!(matches.len(), 0, "{matches:?}");
+    }
+
+    /// Check that erroneous disabling syntax is not accidentally recognized.
+    #[test]
+    fn lint_invalid_disabling() {
+        let code = r#"
+/* bpflint: disabled=foo */
+foo();
+/* disabled=foo */
+foo();
+// disabled=foo
+foo();
+// bpflint: foo
+foo();
+// bpflint: disable=bar
+foo();
+
+void test_fn(void) {
+    /* bpflint: disable=foo */
+    foobar();
+    foo();
+}
+"#;
+        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        assert_eq!(matches.len(), 6, "{matches:?}");
     }
 }
