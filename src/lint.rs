@@ -9,9 +9,8 @@ use tree_sitter::Node;
 use tree_sitter::Parser;
 use tree_sitter::Query;
 use tree_sitter::QueryCursor;
-use tree_sitter::StreamingIterator as _;
 use tree_sitter::Tree;
-use tree_sitter_bpf_c::LANGUAGE;
+use tree_sitter_bpf_c::language;
 
 use crate::Point;
 use crate::Range;
@@ -124,11 +123,11 @@ fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
 
 fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Result<Vec<LintMatch>> {
     let query =
-        Query::new(&LANGUAGE.into(), lint_src).with_context(|| "failed to compile lint query")?;
+        Query::new(&language(), lint_src).with_context(|| "failed to compile lint query")?;
     let mut query_cursor = QueryCursor::new();
     let mut results = Vec::new();
-    let mut matches = query_cursor.matches(&query, tree.root_node(), code);
-    while let Some(m) = matches.next() {
+    let matches = query_cursor.matches(&query, tree.root_node(), code);
+    for m in matches {
         for capture in m.captures {
             if is_lint_disabled(lint_name, capture.node, code) {
                 continue;
@@ -162,7 +161,7 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
 fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
     let mut parser = Parser::new();
     let () = parser
-        .set_language(&LANGUAGE.into())
+        .set_language(&language())
         .context("failed to load C parser")?;
     let tree = parser
         .parse(code, None)
@@ -242,7 +241,7 @@ test_fn(/* doesn't matter */);
     #[test]
     fn validate_lint_queries() {
         for (name, code) in lints::LINTS {
-            let query = Query::new(&LANGUAGE.into(), code).unwrap();
+            let query = Query::new(&language(), code).unwrap();
             assert_eq!(
                 query.pattern_count(),
                 1,
