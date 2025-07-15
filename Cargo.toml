@@ -31,7 +31,7 @@ crate-type = ["cdylib", "rlib"]
 [features]
 # Enable development-style debug logging infrastructure for WASM
 # contexts (currently has no meaning on other targets).
-debug = ["web-sys"]
+debug = []
 # We misuse a feature here to actually prepare the WASM part of the
 # project. Ideally we could use something along the lines of a
 # post-build stage, but discussions surrounding that feature are still
@@ -48,20 +48,13 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false }
 [dependencies]
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-tree-sitter-bpf-c = "0.2.2"
+tree-sitter = "0.23"
+tree-sitter-bpf-c = { version = "0.2.2", git = "https://github.com/d-e-s-o/tree-sitter-bpf-c.git", rev = "45974fffdb59c93e71fd3dc3ed3e9ec62eb15dc5" }
 
 [dev-dependencies]
 bpflint = { path = ".", features = ["debug"] }
 indoc = "2.0"
 pretty_assertions = "1.4"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tree-sitter = "0.25"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-tree-sitter = { package = "tree-sitter-c2rust", version = "0.25" }
-wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ['console'], optional = true }
 
 [lints]
 workspace = true

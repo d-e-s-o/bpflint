@@ -9,7 +9,6 @@ use tree_sitter::Node;
 use tree_sitter::Parser;
 use tree_sitter::Query;
 use tree_sitter::QueryCursor;
-use tree_sitter::StreamingIterator as _;
 use tree_sitter::Tree;
 use tree_sitter_bpf_c::LANGUAGE;
 
@@ -127,8 +126,8 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
         Query::new(&LANGUAGE.into(), lint_src).with_context(|| "failed to compile lint query")?;
     let mut query_cursor = QueryCursor::new();
     let mut results = Vec::new();
-    let mut matches = query_cursor.matches(&query, tree.root_node(), code);
-    while let Some(m) = matches.next() {
+    let matches = query_cursor.matches(&query, tree.root_node(), code);
+    for m in matches {
         for capture in m.captures {
             if is_lint_disabled(lint_name, capture.node, code) {
                 continue;
