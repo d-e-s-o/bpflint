@@ -1,0 +1,25 @@
+name: Update tree-sitter-0.21 branch
+
+on:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Merge with origin/main
+        shell: bash
+        run: |
+          git config --global user.name 'GitHub Actions Automation'
+          git config --global user.email 'ci_activity@noreply.github.com'
+          git checkout tree-sitter-0.21
+          git merge origin/main
+          git push origin HEAD:refs/heads/tree-sitter-0.21

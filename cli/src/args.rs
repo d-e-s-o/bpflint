@@ -58,7 +58,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
 
-    /// Make sure that we can
+    /// Make sure that we can recognize file list inputs as expected.
     #[test]
     fn source_file_parsing() {
         fn try_parse<I, T>(srcs: I) -> Result<Args, clap::Error>

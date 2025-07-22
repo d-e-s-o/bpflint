@@ -37,4 +37,17 @@ program.
        questions are probably best asked in one of the existing issues
        (or a new one).
 
+#### ❓ **Q: I got a false-positive, what can I do?**
+**A:** Some lints require context that is not possible or feasible for
+       the linter to acquire. E.g., `kprobe` attach point usage may be
+       flagged as being an unstable attach point, but the linter cannot
+       know whether a better alternative, say, in the form of a
+       tracepoint, exists. **bpflint** recognizes C comments of the
+       following form on blocks and statements:
+       ```
+       /* bpflint: disable=<lint-name> */
+       ```
+       When encountered, the named lint will be disabled for the
+       directly following item (block, statement, ...).
+
 [docs-rs]: https://docs.rs/bpflint/latest
