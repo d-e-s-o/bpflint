@@ -45,33 +45,35 @@ pub fn report_terminal(
         let row = range.start_point.row;
         let col = range.start_point.col;
         writeln!(writer, "  --> {}:{row}:{col}", path.display())?;
-        let row_str = row.to_string();
-        let lprefix = format!("{row} | ");
-        let prefix = format!("{:width$} | ", "", width = row_str.len());
-        writeln!(writer, "{prefix}")?;
-        let line_start = code[..range.bytes.end]
-            .iter()
-            .rposition(|&b| b == b'\n')
-            .map(|idx| idx + 1)
-            .unwrap_or(0);
-        // TODO: `end_byte` seems to be exclusive, meaning we may end up
-        //       panicking here.
-        let line_end = range.bytes.end
-            + code[range.bytes.end..]
+        if !range.bytes.is_empty() {
+            let row_str = row.to_string();
+            let lprefix = format!("{row} | ");
+            let prefix = format!("{:width$} | ", "", width = row_str.len());
+            writeln!(writer, "{prefix}")?;
+            let line_start = code[..range.bytes.end]
                 .iter()
-                .position(|&b| b == b'\n')
+                .rposition(|&b| b == b'\n')
+                .map(|idx| idx + 1)
                 .unwrap_or(0);
-        let line = &code[line_start..line_end];
-        writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
-        writeln!(
-            writer,
-            "{prefix}{:indent$}{:^<width$}",
-            "",
-            "",
-            indent = range.start_point.col,
-            width = range.end_point.col.saturating_sub(range.start_point.col)
-        )?;
-        writeln!(writer, "{prefix}")?;
+            // TODO: `end_byte` seems to be exclusive, meaning we may end up
+            //       panicking here.
+            let line_end = range.bytes.end
+                + code[range.bytes.end..]
+                    .iter()
+                    .position(|&b| b == b'\n')
+                    .unwrap_or(0);
+            let line = &code[line_start..line_end];
+            writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
+            writeln!(
+                writer,
+                "{prefix}{:indent$}{:^<width$}",
+                "",
+                "",
+                indent = range.start_point.col,
+                width = range.end_point.col.saturating_sub(range.start_point.col)
+            )?;
+            writeln!(writer, "{prefix}")?;
+        }
     } else {
         // TODO: Implement.
         warn!("multi-line reporting is not yet supported");
@@ -88,6 +90,30 @@ mod tests {
 
     use crate::Point;
     use crate::Range;
+
+    /// tests whether a file that has empty range still produces .c warn without line
+    #[test]
+    fn no_bytes() {
+        let code = r#"int main(){}"#;
+
+        let m = LintMatch {
+            lint_name: "bogus-file-extension".to_string(),
+            message: "by convention BPF C code should use the file extension '.bpf.c'".to_string(),
+            range: Range {
+                bytes: 0..0,
+                start_point: Point { row: 0, col: 0 },
+                end_point: Point { row: 0, col: 0 },
+            },
+        };
+        let mut report = Vec::new();
+        let () =
+            report_terminal(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut report).unwrap();
+        let report = String::from_utf8(report).unwrap();
+        let expected = r#"warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
+  --> ./no_bytes.c:0:0
+"#;
+        assert_eq!(report, expected);
+    }
 
 
     /// Check that our "terminal" reporting works as expected.
