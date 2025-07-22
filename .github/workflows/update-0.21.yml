@@ -3,7 +3,7 @@ name: Update tree-sitter-0.21 branch
 on:
   push:
     branches:
-    - main
+    - topic/ci
 
 permissions:
   contents: write
