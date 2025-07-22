@@ -13,11 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Merge with main
+        with:
+          fetch-depth: 0
+      - name: Merge with origin/main
         shell: bash
         run: |
           git config --global user.name 'GitHub Actions Automation'
           git config --global user.email 'ci_activity@noreply.github.com'
           git checkout tree-sitter-0.21
-          git merge main
+          git merge origin/main
           git push origin +HEAD:refs/heads/topic/rebased
