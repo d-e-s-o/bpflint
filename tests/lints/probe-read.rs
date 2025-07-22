@@ -1,11 +1,8 @@
 //! Tests for the `probe-read` lint.
 
-use std::path::Path;
-
-use bpflint::lint;
-use bpflint::report_terminal;
-
 use pretty_assertions::assert_eq;
+
+use crate::util::lint_report;
 
 
 #[test]
@@ -21,14 +18,6 @@ int handle__sched_switch(u64 *ctx)
 }
 "#;
 
-    let mut report = Vec::new();
-    let () = lint(code.as_bytes())
-        .unwrap()
-        .into_iter()
-        .try_for_each(|m| report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report))
-        .unwrap();
-    let report = String::from_utf8(report).unwrap();
-
     let expected = r#"warning: [probe-read] bpf_probe_read() is deprecated and replaced by bpf_probe_user() and bpf_probe_kernel(); refer to bpf-helpers(7)
   --> <stdin>:6:4
   | 
@@ -36,5 +25,5 @@ int handle__sched_switch(u64 *ctx)
   |     ^^^^^^^^^^^^^^
   | 
 "#;
-    assert_eq!(report, expected);
+    assert_eq!(lint_report(code), expected);
 }

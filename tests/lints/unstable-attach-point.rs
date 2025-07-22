@@ -1,11 +1,8 @@
 //! Tests for the `unstable-attach-point` lint.
 
-use std::path::Path;
-
-use bpflint::lint;
-use bpflint::report_terminal;
-
 use pretty_assertions::assert_eq;
+
+use crate::util::lint_report;
 
 
 #[test]
@@ -16,14 +13,6 @@ int nanosleep(void *ctx) {
 }
 "#;
 
-    let mut report = Vec::new();
-    let () = lint(code.as_bytes())
-        .unwrap()
-        .into_iter()
-        .try_for_each(|m| report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report))
-        .unwrap();
-    let report = String::from_utf8(report).unwrap();
-
     let expected = r#"warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are conceptually unstable and prone to changes between kernel versions; consider more stable attach points such as tracepoints or LSM hooks, if available
   --> <stdin>:1:4
   | 
@@ -31,7 +20,7 @@ int nanosleep(void *ctx) {
   |     ^^^^^^^^^^^^^^^^^^^^^
   | 
 "#;
-    assert_eq!(report, expected);
+    assert_eq!(lint_report(code), expected);
 }
 
 
@@ -44,14 +33,6 @@ int BPF_KPROBE(kprobe__foobar, const struct cred *cred,
                struct user_namespace *targ_ns, int cap, int cap_opt) {
 "#;
 
-    let mut report = Vec::new();
-    let () = lint(code.as_bytes())
-        .unwrap()
-        .into_iter()
-        .try_for_each(|m| report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report))
-        .unwrap();
-    let report = String::from_utf8(report).unwrap();
-
     let expected = r#"warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are conceptually unstable and prone to changes between kernel versions; consider more stable attach points such as tracepoints or LSM hooks, if available
   --> <stdin>:1:4
   | 
@@ -59,5 +40,5 @@ int BPF_KPROBE(kprobe__foobar, const struct cred *cred,
   |     ^^^^^^^^^^^^^^^^^^^^
   | 
 "#;
-    assert_eq!(report, expected);
+    assert_eq!(lint_report(code), expected);
 }
