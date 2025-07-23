@@ -86,6 +86,8 @@ pub fn report_terminal(
 mod tests {
     use super::*;
 
+    use indoc::indoc;
+
     use pretty_assertions::assert_eq;
 
     use crate::Point;
@@ -95,40 +97,43 @@ mod tests {
     /// Tests that a match with an empty range includes no code snippet.
     #[test]
     fn empty_range_reporting() {
-        let code = r#"int main(){}"#;
+        let code = indoc! { r#"
+          int main() {}
+        "# };
 
         let m = LintMatch {
             lint_name: "bogus-file-extension".to_string(),
             message: "by convention BPF C code should use the file extension '.bpf.c'".to_string(),
             range: Range {
                 bytes: 0..0,
-                start_point: Point { row: 0, col: 0 },
-                end_point: Point { row: 0, col: 0 },
+                start_point: Point::default(),
+                end_point: Point::default(),
             },
         };
         let mut report = Vec::new();
         let () =
             report_terminal(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
-        let expected = r#"warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
-  --> ./no_bytes.c:0:0
-"#;
+        let expected = indoc! { r#"
+          warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
+            --> ./no_bytes.c:0:0
+        "# };
         assert_eq!(report, expected);
     }
 
     /// Check that our "terminal" reporting works as expected.
     #[test]
     fn terminal_reporting() {
-        let code = r#"
-SEC("tp_btf/sched_switch")
-int handle__sched_switch(u64 *ctx)
-{
-    struct task_struct *prev = (struct task_struct *)ctx[1];
-    struct event event = {0};
-    bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-    return 0;
-}
-"#;
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx)
+          {
+              struct task_struct *prev = (struct task_struct *)ctx[1];
+              struct event event = {0};
+              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              return 0;
+          }
+        "# };
 
         let m = LintMatch {
             lint_name: "probe-read".to_string(),
@@ -142,13 +147,14 @@ int handle__sched_switch(u64 *ctx)
         let mut report = Vec::new();
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
-        let expected = r#"warning: [probe-read] bpf_probe_read() is deprecated
-  --> <stdin>:6:4
-  | 
-6 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-  |     ^^^^^^^^^^^^^^
-  | 
-"#;
+        let expected = indoc! { r#"
+          warning: [probe-read] bpf_probe_read() is deprecated
+            --> <stdin>:6:4
+            | 
+          6 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+            |     ^^^^^^^^^^^^^^
+            | 
+        "# };
         assert_eq!(report, expected);
     }
 
@@ -156,11 +162,12 @@ int handle__sched_switch(u64 *ctx)
     /// very first line of input.
     #[test]
     fn report_top_most_line() {
-        let code = r#"SEC("kprobe/test")
-int handle__test(void)
-{
-}
-"#;
+        let code = indoc! { r#"
+          SEC("kprobe/test")
+          int handle__test(void)
+          {
+          }
+        "# };
 
         let m = LintMatch {
             lint_name: "unstable-attach-point".to_string(),
@@ -174,13 +181,14 @@ int handle__test(void)
         let mut report = Vec::new();
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
-        let expected = r#"warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
-  --> <stdin>:0:4
-  | 
-0 | SEC("kprobe/test")
-  |     ^^^^^^^^^^^^^
-  | 
-"#;
+        let expected = indoc! { r#"
+          warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
+            --> <stdin>:0:4
+            | 
+          0 | SEC("kprobe/test")
+            |     ^^^^^^^^^^^^^
+            | 
+        "# };
         assert_eq!(report, expected);
     }
 }
