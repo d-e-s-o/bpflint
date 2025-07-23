@@ -6,6 +6,7 @@ use std::env::var_os;
 use std::fs::read;
 use std::io;
 use std::io::Write as _;
+use std::path::Path;
 
 use anyhow::Context as _;
 use anyhow::Result;
@@ -18,14 +19,13 @@ use tracing_subscriber::FmtSubscriber;
 use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 
+use bpflint::LintMatch;
+use bpflint::Point;
+use bpflint::Range;
 use bpflint::builtin_lints;
 use bpflint::lint;
 use bpflint::report_terminal;
 
-use bpflint::LintMatch;
-use bpflint::Point;
-use bpflint::Range;
-use std::path::Path;
 
 fn has_bpf_c_ext(path: &Path) -> bool {
     if let Some(file_name) = path.file_name() {
@@ -107,14 +107,14 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use std::path::Path;
 
-    /// tests whether `has_bpf_c_ext` correctly returns true
-    /// for *.bpf.c files else false
+    /// Test that [`has_bpf_c_ext`] works correctly for various
+    /// paths/extensions.
     #[test]
     fn test_has_bpf_c_ext() {
         assert!(has_bpf_c_ext(Path::new("file.bpf.c")));
