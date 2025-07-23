@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   update:
+    if: github.repository == 'd-e-s-o/bpflint'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
