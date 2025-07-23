@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.repository == 'd-e-s-o/bpflint'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
