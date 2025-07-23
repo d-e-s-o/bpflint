@@ -91,9 +91,10 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
-    /// tests whether a file that has empty range still produces .c warn without line
+
+    /// Tests that a match with an empty range includes no code snippet.
     #[test]
-    fn no_bytes() {
+    fn empty_range_reporting() {
         let code = r#"int main(){}"#;
 
         let m = LintMatch {
@@ -114,7 +115,6 @@ mod tests {
 "#;
         assert_eq!(report, expected);
     }
-
 
     /// Check that our "terminal" reporting works as expected.
     #[test]

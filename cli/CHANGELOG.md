@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added support for `@<file>` syntax for reading file list from `<file>`
+- Added warning when input file does not have `*.bpf.c` extension
 
 
 0.1.1
