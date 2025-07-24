@@ -202,6 +202,8 @@ pub fn lint(code: &[u8]) -> Result<Vec<LintMatch>> {
 mod tests {
     use super::*;
 
+    use indoc::indoc;
+
     use crate::Point;
 
 
@@ -220,14 +222,14 @@ mod tests {
     /// appropriately.
     #[test]
     fn missing_message_property() {
-        let code = r#"
-test_fn(/* doesn't matter */);
-"#;
-        let lint = r#"
-(call_expression
-    function: (identifier) @function (#eq? @function "test_fn")
-)
-        "#;
+        let code = indoc! { r#"
+          test_fn(/* doesn't matter */);
+        "# };
+        let lint = indoc! { r#"
+          (call_expression
+              function: (identifier) @function (#eq? @function "test_fn")
+          )
+        "# };
         let err = lint_multi(code.as_bytes(), &[("test_fn", lint)]).unwrap_err();
         assert_eq!(
             err.to_string(),
@@ -259,16 +261,17 @@ test_fn(/* doesn't matter */);
     /// Check that some basic linting works as expected.
     #[test]
     fn basic_linting() {
-        let code = r#"
-SEC("tp_btf/sched_switch")
-int handle__sched_switch(u64 *ctx)
-{
-    struct task_struct *prev = (struct task_struct *)ctx[1];
-    struct event event = {0};
-    bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-    return 0;
-}
-"#;
+        let code = indoc! { r#"
+          /* A handler for something */
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx)
+          {
+              struct task_struct *prev = (struct task_struct *)ctx[1];
+              struct event event = {0};
+              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              return 0;
+          }
+        "# };
 
         let matches = lint(code.as_bytes()).unwrap();
         assert_eq!(matches.len(), 1);
@@ -291,16 +294,16 @@ int handle__sched_switch(u64 *ctx)
     /// Check that reported matches are sorted by line number.
     #[test]
     fn sorted_match_reporting() {
-        let lint_bar = r#"
-(call_expression
-    function: (identifier) @function (#eq? @function "bar")
-    (#set! "message" "bar")
-)
-        "#;
-        let code = r#"
-bar();
-foo();
-"#;
+        let lint_bar = indoc! { r#"
+          (call_expression
+              function: (identifier) @function (#eq? @function "bar")
+              (#set! "message" "bar")
+          )
+        "# };
+        let code = indoc! { r#"
+          bar();
+          foo();
+        "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO, ("bar", lint_bar)]).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
@@ -310,14 +313,14 @@ foo();
     /// Check that we can disable lints by name for a given statement.
     #[test]
     fn lint_disabling() {
-        let code = r#"
-/* bpflint: disable=foo */
-foo();
-// bpflint: disable=foo
-foo();
-// bpflint: disable=all
-foo();
-"#;
+        let code = indoc! { r#"
+          /* bpflint: disable=foo */
+          foo();
+          // bpflint: disable=foo
+          foo();
+          // bpflint: disable=all
+          foo();
+        "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
@@ -325,23 +328,23 @@ foo();
     /// Check that we can disable lints by name for a given block.
     #[test]
     fn lint_disabling_recursive() {
-        let code = r#"
-/* bpflint: disable=foo */
-{
-    {
-        foo();
-    }
-}
-"#;
+        let code = indoc! { r#"
+          /* bpflint: disable=foo */
+          {
+              {
+                  foo();
+              }
+          }
+        "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
-        let code = r#"
-/* bpflint: disable=foo */
-void test_fn(void) {
-    foo();
-}
-"#;
+        let code = indoc! { r#"
+          /* bpflint: disable=foo */
+          void test_fn(void) {
+              foo();
+          }
+        "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
@@ -349,24 +352,24 @@ void test_fn(void) {
     /// Check that erroneous disabling syntax is not accidentally recognized.
     #[test]
     fn lint_invalid_disabling() {
-        let code = r#"
-/* bpflint: disabled=foo */
-foo();
-/* disabled=foo */
-foo();
-// disabled=foo
-foo();
-// bpflint: foo
-foo();
-// bpflint: disable=bar
-foo();
+        let code = indoc! { r#"
+          /* bpflint: disabled=foo */
+          foo();
+          /* disabled=foo */
+          foo();
+          // disabled=foo
+          foo();
+          // bpflint: foo
+          foo();
+          // bpflint: disable=bar
+          foo();
 
-void test_fn(void) {
-    /* bpflint: disable=foo */
-    foobar();
-    foo();
-}
-"#;
+          void test_fn(void) {
+              /* bpflint: disable=foo */
+              foobar();
+              foo();
+          }
+        "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
     }
