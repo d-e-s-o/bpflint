@@ -49,7 +49,7 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false }
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 tree-sitter = "0.21"
-tree-sitter-bpf-c = { version = "0.2.1", git = "https://github.com/d-e-s-o/tree-sitter-bpf-c.git", rev = "392095478a6beb00598e15e8a6c5dbf17dfe8db0" }
+tree-sitter-bpf-c = { version = "0.2.2", git = "https://github.com/d-e-s-o/tree-sitter-bpf-c.git", rev = "1886714592a6f8bee6e2cefc832401f59738993a" }
 web-sys = { version = "0.3", features = ['console'], optional = true }
 
 [dev-dependencies]

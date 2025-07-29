@@ -9,3 +9,5 @@ mod validate;
 mod probe_read;
 #[path = "unstable-attach-point.rs"]
 mod unstable_attach_point;
+#[path = "untyped-map-member.rs"]
+mod untyped_map_member;
