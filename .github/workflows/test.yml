@@ -32,6 +32,15 @@ jobs:
         toolchain: ${{ matrix.rust }}
     - name: Build ${{ matrix.profile }}
       run: cargo build --profile=${{ matrix.profile }} --all-targets --workspace
+  build-wasm32:
+    name: Build for wasm32
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        target: wasm32-unknown-unknown
+    - run: cargo build --target=wasm32-unknown-unknown
   test:
     name: Test
     runs-on: ubuntu-latest
