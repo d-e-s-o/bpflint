@@ -312,9 +312,12 @@ mod tests {
             message.starts_with("bpf_probe_read() is deprecated"),
             "{message}"
         );
-        assert_eq!(&code[range.bytes.clone()], "bpf_probe_read");
+        assert_eq!(
+            &code[range.bytes.clone()],
+            "bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm)"
+        );
         assert_eq!(range.start_point, Point { row: 6, col: 4 });
-        assert_eq!(range.end_point, Point { row: 6, col: 18 });
+        assert_eq!(range.end_point, Point { row: 6, col: 57 });
     }
 
     /// Check that reported matches are sorted by line number.
