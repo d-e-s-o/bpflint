@@ -133,6 +133,15 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
                 continue;
             }
 
+            // SANITY: It would be a tree-sitter bug if the capture
+            //         index does not map to a valid capture name.
+            let capture_name = query.capture_names()[capture.index as usize];
+            // Captures starting with double underscore are considered
+            // internal to the lint and are not reported.
+            if capture_name.starts_with("__") {
+                continue
+            }
+
             let settings = query.property_settings(m.pattern_index);
             let setting = settings
                 .iter()
@@ -238,6 +247,23 @@ mod tests {
         );
     }
 
+    /// Make sure that internal captures (named as "__xxx") are not
+    /// reported as matches.
+    #[test]
+    fn internal_capture_reporting() {
+        let lint_bar = indoc! { r#"
+          (call_expression
+              function: (identifier) @__function (#eq? @__function "bar")
+              (#set! "message" "bar")
+          )
+        "# };
+        let code = indoc! { r#"
+          bar();
+        "# };
+        let matches = lint_multi(code.as_bytes(), &[("bar", lint_bar)]).unwrap();
+        assert!(matches.is_empty(), "{matches:?}");
+    }
+
     /// Check that `tree-sitter` queries represented by built-in lints
     /// exhibit the expected set of properties.
     #[test]
@@ -247,7 +273,7 @@ mod tests {
             assert_eq!(
                 query.pattern_count(),
                 1,
-                "lint `{name}` has too many pattern matches: only single one is supported currently"
+                "lint `{name}` has too many pattern matches: only a single one is supported currently"
             );
 
             let settings = query.property_settings(0);
