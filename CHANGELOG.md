@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Add support for "internal captures" (named `__xxx`) to lints
+- Added `untyped-map-member` lint
 - Embed lint source code directly into build-time generated `lint.rs`
   module
 

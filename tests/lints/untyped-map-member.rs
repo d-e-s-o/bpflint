@@ -17,7 +17,7 @@ fn basic_sizeof() {
     "# };
 
     let expected = indoc! { r#"
-      warning: [untyped-map-member] __uint(a, sizeof(b)) does not contain potentially relevant type information, consider using __type(a, b) instead
+      warning: [untyped-map-member] __uint(<a>_size, sizeof(<b>)) does not contain potentially relevant type information, consider using __type(<a>, <b>) instead
         --> <stdin>:2:4
         | 
       2 |     __uint(key_size, sizeof(b));
