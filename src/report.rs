@@ -50,18 +50,23 @@ pub fn report_terminal(
             let lprefix = format!("{row} | ");
             let prefix = format!("{:width$} | ", "", width = row_str.len());
             writeln!(writer, "{prefix}")?;
-            let line_start = code[..range.bytes.end]
+            // SANITY: It would be a tree-sitter bug the range does not
+            //         map to a valid code location.
+            let line_start = code[..range.bytes.start]
                 .iter()
                 .rposition(|&b| b == b'\n')
                 .map(|idx| idx + 1)
                 .unwrap_or(0);
-            // TODO: `end_byte` seems to be exclusive, meaning we may end up
-            //       panicking here.
+            // SANITY: It would be a tree-sitter bug the range does not
+            //         map to a valid code location.
             let line_end = range.bytes.end
                 + code[range.bytes.end..]
                     .iter()
                     .position(|&b| b == b'\n')
                     .unwrap_or(0);
+            // SANITY: Both `line_start` and `line_end` will always be
+            //         in-bounds of `code`, because we searched for them
+            //         in there.
             let line = &code[line_start..line_end];
             writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
             writeln!(
