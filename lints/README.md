@@ -13,6 +13,12 @@ A lint is a regular Query, with the added requirement that it contains a
 why the pattern being matched on is problematic. For an example please
 refer to the [`probe-read` lint][probe-read-message].
 
+Furthermore, `tree-sitter` Queries support captures and those captures
+always have a name. **bpflint** treats captures beginning with a double
+underscore (`__xxx`) as internal to the lint and will not report them as
+a lint match. This can be useful for enforcing certain constraints. The
+[`probe-read` lint][probe-read-int-capture] uses this mechanism.
+
 A good introduction that to how a Query interfaces with the underlying
 language grammar can be found in the ["Code Navigation Systems"
 chapter][tree-sitter-code-nav].
@@ -69,4 +75,5 @@ and requires no additional tools installed.
 [tree-sitter-queries]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/index.html
 [tree-sitter-bpf-c-bpf.txt]: https://github.com/d-e-s-o/tree-sitter-bpf-c/blob/main/test/corpus/bpf.txt
 [tree-sitter-playground]: https://tree-sitter.github.io/tree-sitter/7-playground.html
-[probe-read-message]: https://github.com/d-e-s-o/bpflint/blob/b8716d24fb133de0371152705bd33a1c56f51bfe/lints/probe-read.scm#L8
+[probe-read-int-capture]: https://github.com/d-e-s-o/bpflint/blob/bc3f8a88ee00a0f19a007bc568020850e6b45b38/lints/probe-read.scm#L2
+[probe-read-message]: https://github.com/d-e-s-o/bpflint/blob/bc3f8a88ee00a0f19a007bc568020850e6b45b38/lints/probe-read.scm#L8
