@@ -28,6 +28,7 @@
 #[macro_use]
 mod redefine;
 
+mod lines;
 mod lint;
 mod report;
 

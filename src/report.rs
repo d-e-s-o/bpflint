@@ -3,8 +3,6 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use tracing::warn;
-
 use crate::LintMatch;
 
 
@@ -81,8 +79,25 @@ pub fn report_terminal(
             writeln!(writer, "{prefix}")?;
         }
     } else {
-        // TODO: Implement.
-        warn!("multi-line reporting is not yet supported");
+        // error[E0308]: mismatched types
+        //  --> test.rs:5:9
+        //   |
+        // 5 | /         a.to_string()
+        // 6 | |           + "tedasdasdas"
+        // 7 | |           + b
+        //   | |_____________^ expected `i32`, found `String`
+        //
+        let row_str = range.end_point.row.to_string();
+        let prefix = format!("{:width$} | ", "", width = row_str.len());
+        writeln!(writer, "{prefix}")?;
+
+        for (idx, row) in (range.start_point.row..=range.end_point.row).enumerate() {
+          let c = if idx == 0 { "/" } else { "|" };
+          let line = format!("{prefix} {c}");
+          writeln!(writer, "{line}")?;
+        }
+
+        writeln!(writer, "{prefix}")?;
     }
     Ok(())
 }
@@ -123,6 +138,43 @@ mod tests {
         let expected = indoc! { r#"
           warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
             --> ./no_bytes.c:0:0
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Make sure that multi-line matches are reported correctly.
+    #[test]
+    fn multi_line_report() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx) {
+              bpf_probe_read(
+                event.comm,
+                TASK_COMM_LEN,
+                prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 68..140,
+                start_point: Point { row: 2, col: 4 },
+                end_point: Point { row: 5, col: 17 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let report = String::from_utf8(report).unwrap();
+        let expected = indoc! { r#"
+          warning: [probe-read] bpf_probe_read() is deprecated
+            --> <stdin>:6:4
+            | 
+          6 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+            |     ^^^^^^^^^^^^^^
+            | 
         "# };
         assert_eq!(report, expected);
     }
