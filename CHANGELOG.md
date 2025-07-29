@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Add support for "internal captures" (named `__xxx`) to lints
 - Embed lint source code directly into build-time generated `lint.rs`
   module
 
