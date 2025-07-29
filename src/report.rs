@@ -41,13 +41,14 @@ pub fn report_terminal(
     } = r#match;
 
     writeln!(writer, "warning: [{lint_name}] {message}")?;
-    if range.start_point.row == range.end_point.row {
-        let row = range.start_point.row;
-        let col = range.start_point.col;
-        writeln!(writer, "  --> {}:{row}:{col}", path.display())?;
+    let start_row = range.start_point.row;
+    let start_col = range.start_point.col;
+    writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
+
+    if start_row == range.end_point.row {
         if !range.bytes.is_empty() {
-            let row_str = row.to_string();
-            let lprefix = format!("{row} | ");
+            let row_str = start_row.to_string();
+            let lprefix = format!("{start_row} | ");
             let prefix = format!("{:width$} | ", "", width = row_str.len());
             writeln!(writer, "{prefix}")?;
             // SANITY: It would be a tree-sitter bug the range does not
