@@ -17,7 +17,8 @@ Furthermore, `tree-sitter` Queries support captures and those captures
 always have a name. **bpflint** treats captures beginning with a double
 underscore (`__xxx`) as internal to the lint and will not report them as
 a lint match. This can be useful for enforcing certain constraints. The
-[`probe-read` lint][probe-read-int-capture] uses this mechanism.
+[`untyped-map-member` lint][untyped-map-member-int-capture] exemplifies
+usage.
 
 A good introduction that to how a Query interfaces with the underlying
 language grammar can be found in the ["Code Navigation Systems"
@@ -75,5 +76,5 @@ and requires no additional tools installed.
 [tree-sitter-queries]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/index.html
 [tree-sitter-bpf-c-bpf.txt]: https://github.com/d-e-s-o/tree-sitter-bpf-c/blob/main/test/corpus/bpf.txt
 [tree-sitter-playground]: https://tree-sitter.github.io/tree-sitter/7-playground.html
-[probe-read-int-capture]: https://github.com/d-e-s-o/bpflint/blob/bc3f8a88ee00a0f19a007bc568020850e6b45b38/lints/probe-read.scm#L2
-[probe-read-message]: https://github.com/d-e-s-o/bpflint/blob/bc3f8a88ee00a0f19a007bc568020850e6b45b38/lints/probe-read.scm#L8
+[probe-read-message]: https://github.com/d-e-s-o/bpflint/blob/0dc852fe8690eb04b2b50a220c7e57ba12c4cc6d/lints/probe-read.scm#L8
+[untyped-map-member-int-capture]: https://github.com/d-e-s-o/bpflint/blob/0dc852fe8690eb04b2b50a220c7e57ba12c4cc6d/lints/untyped-map-member.scm#L2
