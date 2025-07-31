@@ -25,7 +25,7 @@ fn basic() {
         --> <stdin>:5:4
         | 
       5 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-        |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        |     ^^^^^^^^^^^^^^
         | 
     "# };
     assert_eq!(lint_report(code), expected);
