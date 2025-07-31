@@ -3,9 +3,8 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use tracing::warn;
-
 use crate::LintMatch;
+use crate::lines::Lines;
 
 
 /// Report a lint match in terminal style.
@@ -41,48 +40,52 @@ pub fn report_terminal(
     } = r#match;
 
     writeln!(writer, "warning: [{lint_name}] {message}")?;
-    if range.start_point.row == range.end_point.row {
-        let row = range.start_point.row;
-        let col = range.start_point.col;
-        writeln!(writer, "  --> {}:{row}:{col}", path.display())?;
-        if !range.bytes.is_empty() {
-            let row_str = row.to_string();
-            let lprefix = format!("{row} | ");
-            let prefix = format!("{:width$} | ", "", width = row_str.len());
-            writeln!(writer, "{prefix}")?;
-            // SANITY: It would be a tree-sitter bug the range does not
-            //         map to a valid code location.
-            let line_start = code[..range.bytes.start]
-                .iter()
-                .rposition(|&b| b == b'\n')
-                .map(|idx| idx + 1)
-                .unwrap_or(0);
-            // SANITY: It would be a tree-sitter bug the range does not
-            //         map to a valid code location.
-            let line_end = range.bytes.end
-                + code[range.bytes.end..]
-                    .iter()
-                    .position(|&b| b == b'\n')
-                    .unwrap_or(0);
-            // SANITY: Both `line_start` and `line_end` will always be
-            //         in-bounds of `code`, because we searched for them
-            //         in there.
-            let line = &code[line_start..line_end];
-            writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
-            writeln!(
-                writer,
-                "{prefix}{:indent$}{:^<width$}",
-                "",
-                "",
-                indent = range.start_point.col,
-                width = range.end_point.col.saturating_sub(range.start_point.col)
-            )?;
-            writeln!(writer, "{prefix}")?;
-        }
-    } else {
-        // TODO: Implement.
-        warn!("multi-line reporting is not yet supported");
+    let start_row = range.start_point.row;
+    let end_row = range.end_point.row;
+    let start_col = range.start_point.col;
+    let end_col = range.end_point.col;
+    writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
+
+    if range.bytes.is_empty() {
+        return Ok(())
     }
+
+    // SANITY: It would be a tree-sitter bug the range does not
+    //         map to a valid code location.
+    let mut lines = Lines::new(code, range.bytes.start);
+    // Use the end row here, as it's the largest number, so we end up
+    // with a consistent indentation.
+    let prefix = format!("{:width$} | ", "", width = end_row.to_string().len());
+    writeln!(writer, "{prefix}")?;
+
+    if start_row == end_row {
+        let lprefix = format!("{start_row} | ");
+        // SANITY: `Lines` will always report at least a single
+        //          line.
+        let line = lines.next().unwrap();
+        writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
+        writeln!(
+            writer,
+            "{prefix}{:indent$}{:^<width$}",
+            "",
+            "",
+            indent = start_col,
+            width = end_col.saturating_sub(start_col)
+        )?;
+    } else {
+        for (idx, row) in (start_row..=end_row).enumerate() {
+            let lprefix = format!("{row} | ");
+            let c = if idx == 0 { "/" } else { "|" };
+            // SANITY: There will always be another line available,
+            //         given that we are within the bounds of `range`,
+            //         which maps to source code lines.
+            let line = lines.next().unwrap();
+            writeln!(writer, "{lprefix} {c} {}", String::from_utf8_lossy(line))?;
+        }
+        writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
+    }
+
+    writeln!(writer, "{prefix}")?;
     Ok(())
 }
 
@@ -122,6 +125,46 @@ mod tests {
         let expected = indoc! { r#"
           warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
             --> ./no_bytes.c:0:0
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Make sure that multi-line matches are reported correctly.
+    #[test]
+    fn multi_line_report() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx) {
+              bpf_probe_read(
+                event.comm,
+                TASK_COMM_LEN,
+                prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 68..140,
+                start_point: Point { row: 2, col: 4 },
+                end_point: Point { row: 5, col: 17 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let report = String::from_utf8(report).unwrap();
+        let expected = indoc! { r#"
+          warning: [probe-read] bpf_probe_read() is deprecated
+            --> <stdin>:2:4
+            | 
+          2 |  /     bpf_probe_read(
+          3 |  |       event.comm,
+          4 |  |       TASK_COMM_LEN,
+          5 |  |       prev->comm);
+            |  |_________________^
+            | 
         "# };
         assert_eq!(report, expected);
     }

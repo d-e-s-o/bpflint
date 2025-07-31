@@ -2,6 +2,7 @@ Unreleased
 ----------
 - Add support for "internal captures" (named `__xxx`) to lints
 - Added `untyped-map-member` lint
+- Added support for reporting multi-line matches to `report_terminal`
 - Embed lint source code directly into build-time generated `lint.rs`
   module
 
