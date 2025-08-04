@@ -8,8 +8,13 @@
       body {
         font-family: sans-serif;
         padding: 20px;
-        background-color: hsl(226, 23%, 11%);
-        color: #BCBDD0;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: hsl(226, 23%, 11%);
+          color: #BCBDD0;
+        }
       }
 
       #fileInput {
@@ -17,7 +22,6 @@
       }
 
       #lintMessages {
-        scrollbar-color: #2b79a2 #232527;
         scrollbar-width: auto;
         transition: border-color 0.8s ease, box-shadow 0.2s, background-color 0.2s;
         width: 100%;
@@ -28,27 +32,47 @@
         white-space: pre-wrap;
         border: 1px solid #444;
         padding: 10px;
-        background-color: #1D1F21;
-        color: #C5C8C6;
+      }
+      @media (prefers-color-scheme: dark) {
+        #lintMessages {
+          scrollbar-color: #2b79a2 #232527;
+          background-color: #1D1F21;
+          color: #C5C8C6;
+        }
       }
       #lintMessages::-webkit-scrollbar {
         width: 12px;
-        background: #232527;
+      }
+      @media (prefers-color-scheme: dark) {
+        #lintMessages::-webkit-scrollbar {
+          background: #232527;
+        }
       }
       #lintMessages::-webkit-scrollbar-thumb {
-        background: #2b79a2;
         border-radius: 6px;
         border: 2px solid #232527;
       }
-      #lintMessages::-webkit-scrollbar-thumb:hover {
-        background: #226086;
+      @media (prefers-color-scheme: dark) {
+        #lintMessages::-webkit-scrollbar-thumb {
+          background: #2b79a2;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        #lintMessages::-webkit-scrollbar-thumb:hover {
+          background: #226086;
+        }
       }
       #lintMessages:hover,
       #lintMessages:focus {
-        border-color: #81A2BE;
         box-shadow: 0 0 0 2px #81A2BE33;
-        background-color: #232527;
         outline: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        #lintMessages:hover,
+        #lintMessages:focus {
+          border-color: #81A2BE;
+          background-color: #232527;
+        }
       }
 
       .section {
@@ -64,36 +88,53 @@
       .section input[type="text"] {
         padding: 0.4em;
         font-family: monospace;
-        background-color: #1D1F21;
-        color: #C5C8C6;
         border: 1px solid #444;
         outline: none;
         transition: border-color 0.8s ease, box-shadow 0.2s, background-color 0.2s;
+      }
+      @media (prefers-color-scheme: dark) {
+        .section input[type="text"] {
+          background-color: #1D1F21;
+          color: #C5C8C6;
+        }
       }
 
       .section input[type="text"]:hover,
       .section input[type="text"]:focus {
         border-color: #81A2BE;
         box-shadow: 0 0 0 2px #81A2BE33;
-        background-color: #232527;
         transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+      }
+      @media (prefers-color-scheme: dark) {
+        .section input[type="text"]:hover,
+        .section input[type="text"]:focus {
+          border-color: #81A2BE;
+          box-shadow: 0 0 0 2px #81A2BE33;
+          transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+        }
       }
 
       .section button {
+        background-color: #5ba9f2;
         padding: 0.4em 1em;
-        background-color: #2b79a2;
-        color: #C5C8C6;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         transition: background 0.2s, transform 0.15s cubic-bezier(.4,1.4,.6,1.0);
       }
+      @media (prefers-color-scheme: dark) {
+        .section button {
+          background-color: #2b79a2;
+          color: #C5C8C6;
+        }
+      }
       .section button:hover, .section button:focus {
-        background-color: #226086;
         outline: none;
       }
-      .section button:hover {
-        transform: scale(1.08);
+      @media (prefers-color-scheme: dark) {
+        .section button:hover, .section button:focus {
+          background-color: #226086;
+        }
       }
       .section button:focus {
         transform: none;
