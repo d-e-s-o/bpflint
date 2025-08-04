@@ -56,7 +56,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --no-deps --all-targets --workspace -- -A unknown_lints -D warnings
   rustfmt:
-    name: Check code formatting
+    name: Check Rust code formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +64,15 @@ jobs:
         with:
           components: rustfmt
       - run: cargo +nightly fmt -- --check
+  htmlfmt:
+    name: Check HTML code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm install --global js-beautify
+      - run: js-beautify --replace --indent-size 2 --end-with-newline www/index.html
+      - run: git diff --color=always --exit-code
   cargo-doc:
     name: Generate documentation
     runs-on: ubuntu-latest
