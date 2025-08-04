@@ -3,12 +3,20 @@
 mod args;
 
 use std::env::var_os;
+use std::fmt::Debug;
+use std::fmt::Formatter;
+use std::fmt::Result as FmtResult;
 use std::fs::read;
 use std::io;
 use std::io::Write as _;
+use std::io::stderr;
+use std::ops::Not as _;
 use std::path::Path;
+use std::process::ExitCode;
+use std::process::Termination;
 
 use anyhow::Context as _;
+use anyhow::Error;
 use anyhow::Result;
 
 use clap::Parser as _;
@@ -40,7 +48,32 @@ fn has_bpf_c_ext(path: &Path) -> bool {
     false
 }
 
-fn main() -> Result<()> {
+
+enum ExitError {
+    Anyhow(Error),
+    ExitCode(ExitCode),
+}
+
+impl Debug for ExitError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Self::Anyhow(error) => Debug::fmt(error, f),
+            Self::ExitCode(..) => Ok(()),
+        }
+    }
+}
+
+impl<E> From<E> for ExitError
+where
+    Error: From<E>,
+{
+    fn from(error: E) -> Self {
+        Self::Anyhow(Error::from(error))
+    }
+}
+
+
+fn main_impl() -> Result<(), ExitError> {
     let args::Args {
         srcs,
         print_lints,
@@ -88,23 +121,55 @@ fn main() -> Result<()> {
         for lint in builtin_lints() {
             writeln!(&mut stdout, "{}", lint.name)?;
         }
+        Ok(())
     } else {
+        let mut result = Ok(());
         for src_path in srcs.into_iter().flatten() {
             let code = read(&src_path)
                 .with_context(|| format!("failed to read `{}`", src_path.display()))?;
 
-            if !has_bpf_c_ext(&src_path) {
-                let () = report_terminal(&m_ext_is_c, &code, &src_path, &mut stdout)?;
-            }
-
+            let match_ext = has_bpf_c_ext(&src_path).not().then_some(&m_ext_is_c);
             let matches =
                 lint(&code).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
-            for m in matches {
-                let () = report_terminal(&m, &code, &src_path, &mut stdout)?;
+            for m in match_ext.into_iter().chain(matches.iter()) {
+                let () = report_terminal(m, &code, &src_path, &mut stdout)?;
+                if result.is_ok() {
+                    result = Err(ExitError::ExitCode(ExitCode::FAILURE));
+                }
             }
         }
+        result
     }
-    Ok(())
+}
+
+
+#[derive(Debug)]
+enum ExitResult {
+    Ok(()),
+    Err(ExitError),
+}
+
+impl Termination for ExitResult {
+    fn report(self) -> ExitCode {
+        match self {
+            ExitResult::Ok(val) => val.report(),
+            ExitResult::Err(err) => match err {
+                ExitError::Anyhow(error) => {
+                    let _result = writeln!(stderr(), "{error:?}");
+                    ExitCode::FAILURE
+                },
+                ExitError::ExitCode(exit_code) => exit_code,
+            },
+        }
+    }
+}
+
+
+fn main() -> ExitResult {
+    match main_impl() {
+        Ok(()) => ExitResult::Ok(()),
+        Err(err) => ExitResult::Err(err),
+    }
 }
 
 
