@@ -277,9 +277,21 @@ mod tests {
             );
 
             let settings = query.property_settings(0);
+            let setting = settings
+                .iter()
+                .find(|prop| &*prop.key == "message")
+                .expect("`message` property is missing for lint `{name}`");
+            let message = setting
+                .value
+                .as_ref()
+                .unwrap_or_else(|| {
+                    panic!("lint `{name}` has no `message` property has no value set")
+                })
+                .as_ref();
+            let last = message.chars().last().unwrap();
             assert!(
-                settings.iter().any(|prop| &*prop.key == "message"),
-                "`message` property is missing for lint `{name}`"
+                !['.', '!', '?'].contains(&last),
+                "`message` property of lint `{name}` should be concise and not a fully blown sentence with punctuation"
             );
         }
     }
