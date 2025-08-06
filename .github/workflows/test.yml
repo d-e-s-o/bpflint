@@ -94,3 +94,11 @@ jobs:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo doc --workspace --no-deps --document-private-items
+  lint-for-funzies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linter action test
+        uses: d-e-s-o/lint-bpf@main
+        with:
+          args: examples/task_longrun.bpf.c
