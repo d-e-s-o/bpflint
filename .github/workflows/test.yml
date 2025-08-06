@@ -98,7 +98,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: echo examples/task_longrun.bpf.c > TEST.txt
       - name: Linter action test
         uses: d-e-s-o/lint-bpf@main
         with:
-          args: examples/task_longrun.bpf.c
+          args: '@TEST.txt'
