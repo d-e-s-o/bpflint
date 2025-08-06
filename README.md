@@ -18,9 +18,9 @@ to new comers.
 such a `.bpf.c` file as input and scans it for such known issues,
 pointing them out and providing recommendations on how to fix them.
 
-Provided is a Rust library, a [command line interface](cli/), as well as
-[Web UI](https://d-e-s-o.github.io/bpflint/) for linting of BPF C
-program.
+Provided is a Rust library, a [command line interface](cli/), a [Web
+UI][web-ui], as well as a [GitHub Action][gh-action] for linting of BPF
+C programs.
 
 ### 📚 Frequently Asked Questions (FAQ)
 
@@ -37,6 +37,16 @@ program.
        questions are probably best asked in one of the existing issues
        (or a new one).
 
+#### ❓ **Q: I have a repository with BPF code, can I lint contributions easily?**
+**A:** If you are using GitHub Actions as the continuous integration
+       solution of choice, you can add a separate job using the
+       [`lint-bpf` Action][gh-action].
+       For other CI systems some manual plumbing will be necessary. We
+       provide statically linked `bpflinter` CLI binaries that can be
+       downloaded from each `cli-vX.Y.Z` release and used directly on
+       any Linux. E.g.,
+       https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.2/bpflinter-x86_64-unknown-linux-musl
+
 #### ❓ **Q: I got a false-positive, what can I do?**
 **A:** Some lints require context that is not possible or feasible for
        the linter to acquire. E.g., `kprobe` attach point usage may be
@@ -51,3 +61,5 @@ program.
        directly following item (block, statement, ...).
 
 [docs-rs]: https://docs.rs/bpflint/latest
+[gh-action]: https://github.com/d-e-s-o/lint-bpf
+[web-ui]: https://d-e-s-o.github.io/bpflint/
