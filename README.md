@@ -2,7 +2,7 @@
 [![crates.io](https://img.shields.io/crates/v/bpflint.svg)](https://crates.io/crates/bpflint)
 [![Docs](https://docs.rs/bpflint/badge.svg)](https://docs.rs/bpflint)
 
-bpflint
+bpflint <img src="var/logo.png" style="height:1em">
 =======
 
 - [Library documentation][docs-rs]
