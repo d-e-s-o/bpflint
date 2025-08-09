@@ -11,3 +11,5 @@ mod probe_read;
 mod unstable_attach_point;
 #[path = "untyped-map-member.rs"]
 mod untyped_map_member;
+#[path = "perf-buff-map.rs"]
+mod perf_buff_map;
