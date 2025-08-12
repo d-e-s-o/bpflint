@@ -26,7 +26,7 @@ jobs:
         rust: [stable]
         profile: [dev, release]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
@@ -36,7 +36,7 @@ jobs:
     name: Build for wasm32
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: dtolnay/rust-toolchain@stable
       with:
         target: wasm32-unknown-unknown
@@ -45,21 +45,21 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Test
       run: cargo test --workspace
   clippy:
     name: Lint with clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --no-deps --all-targets --workspace -- -A unknown_lints -D warnings
   rustfmt:
     name: Check Rust code formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
@@ -68,7 +68,7 @@ jobs:
     name: Check HTML code formatting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
       - run: npm install --global js-beautify
       - run: js-beautify --replace --indent-size 2 --end-with-newline www/index.html
@@ -79,6 +79,6 @@ jobs:
     env:
       RUSTDOCFLAGS: '-D warnings'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo doc --workspace --no-deps --document-private-items
