@@ -48,6 +48,18 @@ jobs:
     - uses: actions/checkout@v5
     - name: Test
       run: cargo test --workspace
+  cli-usage:
+    name: CLI Usage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - run: |
+        echo '```' > cli/USAGE.md
+        cargo run --package bpflinter -- --help >> cli/USAGE.md
+        echo '```' >> cli/USAGE.md
+    - name: Check that usage info is up-to-date
+      run: git diff --exit-code ||
+             (echo "!!!! CHECKED IN USAGE.md IS OUTDATED !!!!" && false)
   clippy:
     name: Lint with clippy
     runs-on: ubuntu-latest

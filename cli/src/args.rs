@@ -30,13 +30,14 @@ fn parse_files(s: &str) -> Result<Vec<PathBuf>> {
 }
 
 
-/// A command line interface for `bpflint`.
+/// A command line interface for bpflint.
 #[derive(Debug, Parser)]
 #[command(version = env!("VERSION"))]
 pub struct Args {
     /// The BPF C source files to lint.
     ///
-    /// Use '@file' syntax to include a file list contained in 'file'.
+    /// Use '@file' syntax to include a (newline separated) list of
+    /// files from 'file'.
     #[arg(required = true, value_name = "[@]SRCS", value_parser = parse_files)]
     pub srcs: Vec<Vec<PathBuf>>,
     /// Print a list of available lints.
