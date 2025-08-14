@@ -48,8 +48,8 @@ warning: [probe-read] bpf_probe_read() is deprecated and replaced by bpf_probe_u
    |
 ```
 
-For additional information, please refer to the program's help text
-(`bpflinter --help`).
+For additional information, please refer to [USAGE.md](USAGE.md) or the
+program's help text (`bpflinter --help`).
 
 [cli-releases]: https://github.com/d-e-s-o/bpflint/releases
 [bpflint]: https://github.com/d-e-s-o/bpflint
