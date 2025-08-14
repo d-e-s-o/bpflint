@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.1.2
+-----
 - Add support for "internal captures" (named `__xxx`) to lints
 - Added `untyped-map-member` lint
 - Added support for reporting multi-line matches to `report_terminal`
