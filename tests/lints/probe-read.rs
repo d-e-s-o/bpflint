@@ -30,3 +30,14 @@ fn basic() {
     "# };
     assert_eq!(lint_report(code), expected);
 }
+
+
+/// Make sure that we don't match a function with the same name but a
+/// different signature.
+#[test]
+fn no_match_different_signature() {
+    let code = indoc! { r#"
+      bpf_probe_read("foobar");
+    "# };
+    assert_eq!(lint_report(code), "");
+}
