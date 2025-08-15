@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Added `get-current-task` lint
+
+
 0.1.2
 -----
 - Add support for "internal captures" (named `__xxx`) to lints
