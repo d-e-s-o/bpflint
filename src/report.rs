@@ -45,6 +45,7 @@ pub fn report_terminal(
     let start_col = range.start_point.col;
     let end_col = range.end_point.col;
     writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
+    let width = end_row.to_string().len();
 
     if range.bytes.is_empty() {
         return Ok(())
@@ -55,7 +56,7 @@ pub fn report_terminal(
     let mut lines = Lines::new(code, range.bytes.start);
     // Use the end row here, as it's the largest number, so we end up
     // with a consistent indentation.
-    let prefix = format!("{:width$} | ", "", width = end_row.to_string().len());
+    let prefix = format!("{:width$} | ", "");
     writeln!(writer, "{prefix}")?;
 
     if start_row == end_row {
@@ -74,7 +75,7 @@ pub fn report_terminal(
         )?;
     } else {
         for (idx, row) in (start_row..=end_row).enumerate() {
-            let lprefix = format!("{row} | ");
+            let lprefix = format!("{row:width$} | ");
             let c = if idx == 0 { "/" } else { "|" };
             // SANITY: There will always be another line available,
             //         given that we are within the bounds of `range`,
@@ -165,6 +166,52 @@ mod tests {
           5 |  |       prev->comm);
             |  |_________________^
             | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Make sure that multi-line matches that are straddling a power of
+    /// ten line number are reported correctly.
+    #[test]
+    fn multi_line_report_line_numbers() {
+        let code = indoc! { r#"
+          /* A
+           * bunch
+           * of
+           * filling
+           */
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx) {
+              bpf_probe_read(
+                event.comm,
+                TASK_COMM_LEN,
+                prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 103..175,
+                start_point: Point { row: 7, col: 4 },
+                end_point: Point { row: 10, col: 17 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let report = String::from_utf8(report).unwrap();
+        let expected = indoc! { r#"
+          warning: [probe-read] bpf_probe_read() is deprecated
+            --> <stdin>:7:4
+             | 
+           7 |  /     bpf_probe_read(
+           8 |  |       event.comm,
+           9 |  |       TASK_COMM_LEN,
+          10 |  |       prev->comm);
+             |  |_________________^
+             | 
         "# };
         assert_eq!(report, expected);
     }

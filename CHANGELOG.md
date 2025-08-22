@@ -1,6 +1,8 @@
 Unreleased
 ----------
 - Added `get-current-task` lint
+- Fixed line number alignment for multi-line matches straddling a power
+  of ten boundary in `report_terminal`
 
 
 0.1.2
