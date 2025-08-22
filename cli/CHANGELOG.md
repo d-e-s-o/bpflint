@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Added `--after`/`-A`, `--before`/`-B, and `--context`/`-C` arguments
+  to control amount of source code context to show
+
+
 0.1.2
 -----
 - Added support for `@<file>` syntax for reading file list from `<file>`

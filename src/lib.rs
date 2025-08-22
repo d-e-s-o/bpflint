@@ -60,7 +60,9 @@ pub use crate::lint::LintMatch;
 pub use crate::lint::LintMeta;
 pub use crate::lint::builtin_lints;
 pub use crate::lint::lint;
+pub use crate::report::Opts;
 pub use crate::report::report_terminal;
+pub use crate::report::report_terminal_opts;
 
 
 #[cfg(target_arch = "wasm32")]
