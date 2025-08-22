@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added `get-current-task` lint
+- Added `report_terminal_opts` function and `Opts` type
 - Fixed line number alignment for multi-line matches straddling a power
   of ten boundary in `report_terminal`
 

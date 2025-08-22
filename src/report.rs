@@ -7,6 +7,34 @@ use crate::LintMatch;
 use crate::lines::Lines;
 
 
+/// Configuration options for terminal reporting.
+#[derive(Default, Clone, Debug)]
+pub struct Opts {
+    /// Extra context lines: (`lines_before`, `lines_after`).
+    pub extra_lines: Option<(u8, u8)>,
+    /// The struct is non-exhaustive and open to extension.
+    #[doc(hidden)]
+    pub _non_exhaustive: (),
+}
+
+impl Opts {
+    /// Get the number of lines to show before the lint match.
+    pub fn lines_before(&self) -> usize {
+        match self.extra_lines {
+            None => 0,
+            Some((before, _)) => usize::from(before),
+        }
+    }
+
+    /// Get the number of lines to show after the error.
+    pub fn lines_after(&self) -> usize {
+        match self.extra_lines {
+            None => 0,
+            Some((_, after)) => usize::from(after),
+        }
+    }
+}
+
 /// Report a lint match in terminal style.
 ///
 /// - `match` is the match to create a report for
@@ -33,6 +61,41 @@ pub fn report_terminal(
     path: &Path,
     writer: &mut dyn io::Write,
 ) -> Result<()> {
+    report_terminal_opts(r#match, code, path, &Opts::default(), writer)
+}
+
+/// Report a lint match in terminal style with extra lines for context as configured.
+///
+/// - `match` is the match to create a report for
+/// - `code` is the source code in question, as passed to
+///   [`lint`][crate::lint()]
+/// - `path` should be the path to the file to which `code` corresponds
+///   and is used to enhance the generated report
+/// - `opts` specifies the reporting options including context lines
+/// - `writer` is a reference to a [`io::Write`] to which to write the
+///   report
+///
+/// # Example
+/// ```text
+/// warning: [probe-read] bpf_probe_read() is deprecated and replaced by
+///          bpf_probe_user() and bpf_probe_kernel(); refer to bpf-helpers(7)
+///   --> example.bpf.c:43:24
+///    |
+/// 41 |     struct task_struct *prev = (struct task_struct *)ctx[1];
+/// 42 |     struct event event = {0};
+/// 43 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+///    |     ^^^^^^^^^^^^^^
+/// 44 |     return 0;
+/// 45 | }
+///    |
+/// ```
+pub fn report_terminal_opts(
+    r#match: &LintMatch,
+    code: &[u8],
+    path: &Path,
+    opts: &Opts,
+    writer: &mut dyn io::Write,
+) -> Result<()> {
     let LintMatch {
         lint_name,
         message,
@@ -45,22 +108,43 @@ pub fn report_terminal(
     let start_col = range.start_point.col;
     let end_col = range.end_point.col;
     writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
-    let width = end_row.to_string().len();
+    let width = (end_row + opts.lines_after()).to_string().len();
 
     if range.bytes.is_empty() {
         return Ok(())
     }
 
-    // SANITY: It would be a tree-sitter bug the range does not
-    //         map to a valid code location.
-    let mut lines = Lines::new(code, range.bytes.start);
     // Use the end row here, as it's the largest number, so we end up
     // with a consistent indentation.
     let prefix = format!("{:width$} | ", "");
     writeln!(writer, "{prefix}")?;
 
+    // Print source code context before the actual match. Need to
+    // `collect` here, because the `Write` interface we work with forces
+    // us to emit data in sequential order, but we necessary have to go
+    // backwards from the match.
+    // SANITY: It would be a tree-sitter bug the range does not
+    //         map to a valid code location.
+    let () = Lines::new(code, range.bytes.start)
+        .rev()
+        // Skip the line of the match.
+        .skip(1)
+        .take(opts.lines_before())
+        .collect::<Vec<&[u8]>>()
+        .into_iter()
+        .enumerate()
+        .rev()
+        .try_for_each(|(row_sub, line)| {
+            let row = start_row - row_sub - 1;
+            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+        })?;
+
+    // SANITY: It would be a tree-sitter bug the range does not
+    //         map to a valid code location.
+    let mut lines = Lines::new(code, range.bytes.start);
+
     if start_row == end_row {
-        let lprefix = format!("{start_row} | ");
+        let lprefix = format!("{start_row:width$} | ");
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
@@ -86,6 +170,14 @@ pub fn report_terminal(
         writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
     }
 
+    let () = lines
+        .take(opts.lines_after())
+        .enumerate()
+        .try_for_each(|(row_add, line)| {
+            let row = end_row + row_add + 1;
+            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+        })?;
+
     writeln!(writer, "{prefix}")?;
     Ok(())
 }
@@ -102,6 +194,22 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
+
+    /// Test Opts default and methods.
+    #[test]
+    fn opts_behavior() {
+        let default_opts = Opts::default();
+        assert_eq!(default_opts.extra_lines, None);
+        assert_eq!(default_opts.lines_before(), 0);
+        assert_eq!(default_opts.lines_after(), 0);
+
+        let extra_opts = Opts {
+            extra_lines: Some((3, 5)),
+            _non_exhaustive: (),
+        };
+        assert_eq!(extra_opts.lines_before(), 3);
+        assert_eq!(extra_opts.lines_after(), 5);
+    }
 
     /// Tests that a match with an empty range includes no code snippet.
     #[test]
@@ -283,6 +391,245 @@ mod tests {
           0 | SEC("kprobe/test")
             |     ^^^^^^^^^^^^^
             | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Test that `report_terminal_opts` with `Opts::default()` behaves
+    /// identically to `report_terminal`.
+    #[test]
+    fn report_terminal_opts_none_context() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx)
+          {
+              struct task_struct *prev = (struct task_struct *)ctx[1];
+              struct event event = {0};
+              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 160..174,
+                start_point: Point { row: 5, col: 4 },
+                end_point: Point { row: 5, col: 18 },
+            },
+        };
+
+        let mut report_old = Vec::new();
+        let mut report_new = Vec::new();
+
+        let () =
+            report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report_old).unwrap();
+        let () = report_terminal_opts(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            &Opts::default(),
+            &mut report_new,
+        )
+        .unwrap();
+
+        assert_eq!(report_old, report_new);
+    }
+
+    /// Test `report_terminal_opts` with extra context lines.
+    #[test]
+    fn report_terminal_opts_with_context() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx)
+          {
+              struct task_struct *prev = (struct task_struct *)ctx[1];
+              struct event event = {0};
+              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 160..174,
+                start_point: Point { row: 5, col: 4 },
+                end_point: Point { row: 5, col: 18 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal_opts(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            &Opts {
+                extra_lines: Some((2, 1)),
+                ..Default::default()
+            },
+            &mut report,
+        )
+        .unwrap();
+        let report = String::from_utf8(report).unwrap();
+
+        let expected = indoc! { r#"
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:5:4
+              | 
+            3 |     struct task_struct *prev = (struct task_struct *)ctx[1];
+            4 |     struct event event = {0};
+            5 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              |     ^^^^^^^^^^^^^^
+            6 |     return 0;
+              | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Test context lines with multi-line matches.
+    #[test]
+    fn report_terminal_opts_multiline_with_context() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx) {
+              bpf_probe_read(
+                event.comm,
+                TASK_COMM_LEN,
+                prev->comm);
+              return 0;
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 68..140,
+                start_point: Point { row: 2, col: 4 },
+                end_point: Point { row: 5, col: 17 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal_opts(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            &Opts {
+                extra_lines: Some((1, 1)),
+                ..Default::default()
+            },
+            &mut report,
+        )
+        .unwrap();
+        let report = String::from_utf8(report).unwrap();
+
+        let expected = indoc! { r#"
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:2:4
+              | 
+            1 | int handle__sched_switch(u64 *ctx) {
+            2 |  /     bpf_probe_read(
+            3 |  |       event.comm,
+            4 |  |       TASK_COMM_LEN,
+            5 |  |       prev->comm);
+              |  |_________________^
+            6 |     return 0;
+              | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Test context lines when there aren't enough lines before the error.
+    #[test]
+    fn report_terminal_opts_insufficient_context_before() {
+        let code = indoc! { r#"
+          SEC("kprobe/test")
+          int handle__test(void)
+          {
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "unstable-attach-point".to_string(),
+            message: "kprobe/kretprobe/fentry/fexit are unstable".to_string(),
+            range: Range {
+                bytes: 4..17,
+                start_point: Point { row: 0, col: 4 },
+                end_point: Point { row: 0, col: 17 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal_opts(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            &Opts {
+                extra_lines: Some((5, 2)),
+                ..Default::default()
+            },
+            &mut report,
+        )
+        .unwrap();
+        let report = String::from_utf8(report).unwrap();
+
+        let expected = indoc! { r#"
+            warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
+              --> <stdin>:0:4
+              | 
+            0 | SEC("kprobe/test")
+              |     ^^^^^^^^^^^^^
+            1 | int handle__test(void)
+            2 | {
+              | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Test context lines when there aren't enough lines after the error.
+    #[test]
+    fn report_terminal_opts_insufficient_context_after() {
+        let code = indoc! { r#"
+          SEC("tp_btf/sched_switch")
+          int handle__sched_switch(u64 *ctx)
+          {
+              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+          }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "probe-read".to_string(),
+            message: "bpf_probe_read() is deprecated".to_string(),
+            range: Range {
+                bytes: 68..82,
+                start_point: Point { row: 3, col: 4 },
+                end_point: Point { row: 3, col: 18 },
+            },
+        };
+        let mut report = Vec::new();
+        let () = report_terminal_opts(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            &Opts {
+                extra_lines: Some((1, 5)),
+                ..Default::default()
+            },
+            &mut report,
+        )
+        .unwrap();
+        let report = String::from_utf8(report).unwrap();
+
+        let expected = indoc! { r#"
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:3:4
+              | 
+            2 | {
+            3 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              |     ^^^^^^^^^^^^^^
+            4 | }
+              | 
         "# };
         assert_eq!(report, expected);
     }
