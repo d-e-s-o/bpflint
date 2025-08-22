@@ -9,6 +9,8 @@ pub(crate) struct Lines<'src> {
     code: &'src [u8],
     /// The index at which we continue forward searching for lines.
     idx: Option<usize>,
+    /// The index at which we continue backward searching for lines.
+    back_idx: Option<usize>,
 }
 
 impl<'src> Lines<'src> {
@@ -24,6 +26,7 @@ impl<'src> Lines<'src> {
         Self {
             code,
             idx: Some(idx),
+            back_idx: Some(idx),
         }
     }
 
@@ -61,6 +64,25 @@ impl<'src> Iterator for Lines<'src> {
                 self.idx = None;
             } else {
                 self.idx = Some(next_idx);
+            }
+            Some(line)
+        } else {
+            None
+        }
+    }
+}
+
+impl<'src> DoubleEndedIterator for Lines<'src> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(idx) = self.back_idx {
+            let start = Self::find_line_start(self.code, idx);
+            let end = Self::find_line_end(self.code, idx);
+            let line = &self.code[start..end];
+
+            if let Some(next_idx) = start.checked_sub(1) {
+                self.back_idx = Some(next_idx);
+            } else {
+                self.back_idx = None;
             }
             Some(line)
         } else {
@@ -173,6 +195,47 @@ mod tests {
         assert_eq!(lines.next(), Some(b"cde".as_slice()));
         assert_eq!(lines.next(), Some(b"fgh".as_slice()));
         assert_eq!(lines.next(), None);
+    }
+
+    /// Test that we can iterate over lines in a backward fashion.
+    #[test]
+    fn backward_iteration() {
+        let mut lines = Lines::new(b"", 0);
+        assert_eq!(lines.next_back(), Some(b"".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let mut lines = Lines::new(b"a", 0);
+        assert_eq!(lines.next_back(), Some(b"a".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let mut lines = Lines::new(b"a", 1);
+        assert_eq!(lines.next_back(), Some(b"a".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let code = indoc! { br#"
+          abc
+          cde
+          fgh
+        "# };
+
+        let mut lines = Lines::new(code, 0);
+        assert_eq!(lines.next_back(), Some(b"abc".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let mut lines = Lines::new(code, 3);
+        assert_eq!(lines.next_back(), Some(b"abc".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let mut lines = Lines::new(code, 4);
+        assert_eq!(lines.next_back(), Some(b"cde".as_slice()));
+        assert_eq!(lines.next_back(), Some(b"abc".as_slice()));
+        assert_eq!(lines.next_back(), None);
+
+        let mut lines = Lines::new(code, code.len() - 1);
+        assert_eq!(lines.next_back(), Some(b"fgh".as_slice()));
+        assert_eq!(lines.next_back(), Some(b"cde".as_slice()));
+        assert_eq!(lines.next_back(), Some(b"abc".as_slice()));
+        assert_eq!(lines.next_back(), None);
     }
 
     /// Make sure that we fail [`Lines`] construction with an invalid
