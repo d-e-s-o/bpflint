@@ -67,6 +67,7 @@ pub use crate::report::report_terminal_opts;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
+    use std::io::Write as _;
     use std::path::PathBuf;
 
     use anyhow::Context as _;
@@ -91,9 +92,16 @@ mod wasm {
                 extra_lines: (context, context),
                 ..Default::default()
             };
+            let mut first = true;
             let mut report = Vec::new();
             let matches = lint(&code)?;
             for m in matches {
+                if !first {
+                    writeln!(&mut report)?;
+                } else {
+                    first = false;
+                }
+
                 let () = report_terminal_opts(&m, &code, &path, &opts, &mut report)?;
             }
             let report =
