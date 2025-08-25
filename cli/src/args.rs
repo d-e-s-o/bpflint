@@ -85,25 +85,17 @@ pub struct Args {
 impl Args {
     /// Calculate the effective context configuration.
     pub fn additional_options(&self) -> bpflint::Opts {
-        let (before, after) = if let Some(context) = self.context {
-            // -C sets both before and after to the same value
-            (context, context)
-        } else {
-            // Use -A and -B values directly (they can be combined)
-            (self.before.unwrap_or(0), self.after.unwrap_or(0))
-        };
-
-        // If both are 0 (default), use None
-        if before == 0 && after == 0 {
-            bpflint::Opts::default()
-        } else {
-            bpflint::Opts {
-                extra_lines: Some((before, after)),
-                _non_exhaustive: (),
-            }
+        let mut opts = bpflint::Opts::default();
+        if let Some(before) = self.before.or(self.context) {
+            opts.extra_lines.0 = before;
         }
+        if let Some(after) = self.after.or(self.context) {
+            opts.extra_lines.1 = after;
+        }
+        opts
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -172,17 +164,17 @@ mod tests {
         // Default values
         let args = try_parse(["test.c"]).unwrap();
         let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, None);
+        assert_eq!(opts.extra_lines, (0, 0));
 
         // -B 3 -A 4 (can be combined)
         let args = try_parse(["test.c", "-B", "3", "-A", "4"]).unwrap();
         let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, Some((3, 4)));
+        assert_eq!(opts.extra_lines, (3, 4));
 
         // -C 4 (sets both before and after to 4)
         let args = try_parse(["test.c", "-C", "4"]).unwrap();
         let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, Some((4, 4)));
+        assert_eq!(opts.extra_lines, (4, 4));
     }
 
     /// Test that -C cannot be combined with -A or -B using clap groups.

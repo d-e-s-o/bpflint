@@ -10,30 +10,13 @@ use crate::lines::Lines;
 /// Configuration options for terminal reporting.
 #[derive(Default, Clone, Debug)]
 pub struct Opts {
-    /// Extra context lines: (`lines_before`, `lines_after`).
-    pub extra_lines: Option<(u8, u8)>,
+    /// Extra lines of context to report before and after a match.
+    pub extra_lines: (u8, u8),
     /// The struct is non-exhaustive and open to extension.
     #[doc(hidden)]
     pub _non_exhaustive: (),
 }
 
-impl Opts {
-    /// Get the number of lines to show before the lint match.
-    pub fn lines_before(&self) -> usize {
-        match self.extra_lines {
-            None => 0,
-            Some((before, _)) => usize::from(before),
-        }
-    }
-
-    /// Get the number of lines to show after the error.
-    pub fn lines_after(&self) -> usize {
-        match self.extra_lines {
-            None => 0,
-            Some((_, after)) => usize::from(after),
-        }
-    }
-}
 
 /// Report a lint match in terminal style.
 ///
@@ -108,7 +91,9 @@ pub fn report_terminal_opts(
     let start_col = range.start_point.col;
     let end_col = range.end_point.col;
     writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
-    let width = (end_row + opts.lines_after()).to_string().len();
+    let width = (end_row + usize::from(opts.extra_lines.1))
+        .to_string()
+        .len();
 
     if range.bytes.is_empty() {
         return Ok(())
@@ -129,7 +114,7 @@ pub fn report_terminal_opts(
         .rev()
         // Skip the line of the match.
         .skip(1)
-        .take(opts.lines_before())
+        .take(opts.extra_lines.0.into())
         .collect::<Vec<&[u8]>>()
         .into_iter()
         .enumerate()
@@ -171,7 +156,7 @@ pub fn report_terminal_opts(
     }
 
     let () = lines
-        .take(opts.lines_after())
+        .take(opts.extra_lines.1.into())
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
@@ -194,22 +179,6 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
-
-    /// Test Opts default and methods.
-    #[test]
-    fn opts_behavior() {
-        let default_opts = Opts::default();
-        assert_eq!(default_opts.extra_lines, None);
-        assert_eq!(default_opts.lines_before(), 0);
-        assert_eq!(default_opts.lines_after(), 0);
-
-        let extra_opts = Opts {
-            extra_lines: Some((3, 5)),
-            _non_exhaustive: (),
-        };
-        assert_eq!(extra_opts.lines_before(), 3);
-        assert_eq!(extra_opts.lines_after(), 5);
-    }
 
     /// Tests that a match with an empty range includes no code snippet.
     #[test]
@@ -466,7 +435,7 @@ mod tests {
             code.as_bytes(),
             Path::new("<stdin>"),
             &Opts {
-                extra_lines: Some((2, 1)),
+                extra_lines: (2, 1),
                 ..Default::default()
             },
             &mut report,
@@ -517,7 +486,7 @@ mod tests {
             code.as_bytes(),
             Path::new("<stdin>"),
             &Opts {
-                extra_lines: Some((1, 1)),
+                extra_lines: (1, 1),
                 ..Default::default()
             },
             &mut report,
@@ -566,7 +535,7 @@ mod tests {
             code.as_bytes(),
             Path::new("<stdin>"),
             &Opts {
-                extra_lines: Some((5, 2)),
+                extra_lines: (5, 2),
                 ..Default::default()
             },
             &mut report,
@@ -613,7 +582,7 @@ mod tests {
             code.as_bytes(),
             Path::new("<stdin>"),
             &Opts {
-                extra_lines: Some((1, 5)),
+                extra_lines: (1, 5),
                 ..Default::default()
             },
             &mut report,
