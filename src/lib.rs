@@ -77,17 +77,18 @@ mod wasm {
     use super::*;
 
     /// Lint source code `code` representing a file at `path` and
-    /// produce a report, end-to-end.
+    /// produce a report, end-to-end. `context` describes the number of
+    /// lines of source code context to include in the report.
     ///
     /// This function exists mostly because exposing something like our
     /// `LintMatch` type across WASM's ABI is a major PITA and our
     /// interactive service only cares about the end-to-end workflow
     /// anyway.
     #[wasm_bindgen]
-    pub fn lint_html(code: Vec<u8>, path: String) -> Result<String, String> {
-        fn lint_impl(code: Vec<u8>, path: PathBuf) -> Result<String, Error> {
+    pub fn lint_html(code: Vec<u8>, path: String, context: u8) -> Result<String, String> {
+        fn lint_impl(code: Vec<u8>, path: PathBuf, context: u8) -> Result<String, Error> {
             let opts = Opts {
-                extra_lines: (2, 2),
+                extra_lines: (context, context),
                 ..Default::default()
             };
             let mut report = Vec::new();
@@ -100,6 +101,6 @@ mod wasm {
             Ok(report)
         }
 
-        lint_impl(code, PathBuf::from(path)).map_err(|err| format!("{err:?}"))
+        lint_impl(code, PathBuf::from(path), context).map_err(|err| format!("{err:?}"))
     }
 }
