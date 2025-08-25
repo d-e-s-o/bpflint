@@ -132,10 +132,17 @@ fn main_impl() -> Result<(), ExitError> {
             let code = read(src_path)
                 .with_context(|| format!("failed to read `{}`", src_path.display()))?;
 
+            let mut first = true;
             let match_ext = has_bpf_c_ext(src_path).not().then_some(&m_ext_is_c);
             let matches =
                 lint(&code).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
             for m in match_ext.into_iter().chain(matches.iter()) {
+                if !first {
+                    writeln!(&mut stdout)?;
+                } else {
+                    first = false;
+                }
+
                 let () = report_terminal_opts(m, &code, src_path, &additional_opts, &mut stdout)?;
                 if result.is_ok() {
                     result = Err(ExitError::ExitCode(ExitCode::FAILURE));
