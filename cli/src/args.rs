@@ -65,12 +65,6 @@ pub struct Args {
     /// files from 'file'.
     #[arg(required = true, value_name = "[@]SRCS", value_parser = parse_files)]
     pub srcs: Vec<Vec<PathBuf>>,
-    /// Print a list of available lints.
-    #[arg(long, exclusive = true)]
-    pub print_lints: bool,
-    /// Increase verbosity (can be supplied multiple times).
-    #[arg(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
-    pub verbosity: u8,
     /// Number of lines to show before the lint match.
     #[arg(short = 'B', long = "before", value_parser = parse_context_line_count)]
     pub before: Option<u8>,
@@ -80,6 +74,12 @@ pub struct Args {
     /// Number of lines to show before and after the lint match.
     #[arg(short = 'C', long = "context", value_parser = parse_context_line_count, conflicts_with_all = ["before", "after"])]
     pub context: Option<u8>,
+    /// Print a list of available lints.
+    #[arg(long, exclusive = true)]
+    pub print_lints: bool,
+    /// Increase verbosity (can be supplied multiple times).
+    #[arg(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
+    pub verbosity: u8,
 }
 
 impl Args {
