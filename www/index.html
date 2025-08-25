@@ -28,7 +28,7 @@
 
     .section {
       display: grid;
-      grid-template-columns: 120px minmax(10em, 80em) 7em;
+      grid-template-columns: 140px minmax(10em, 80em) 7em;
       gap: 1em;
       align-items: center;
       margin-bottom: 1.5em;
@@ -69,6 +69,9 @@
     <label for="urlInput">Remote file:</label>
     <input type="text" id="urlInput" value="https://raw.githubusercontent.com/d-e-s-o/bpflint/refs/heads/main/examples/task_longrun.bpf.c" />
     <button id="fetchButton">Fetch</button>
+
+    <label for="contextCnt">Context lines:</label>
+    <input type="number" id="contextCnt" min="0" max="255" step="1" value="2">
   </div>
 
   <textarea id="lintMessages" readonly placeholder="Lint messages will appear here..."></textarea>
@@ -80,10 +83,15 @@
     } from './pkg/bpflint.js';
 
     await init('./pkg/bpflint_bg.wasm');
+
     const fileInput = document.getElementById('fileInput');
     const filePath = document.getElementById('filePath');
+    const contextCnt = document.getElementById('contextCnt');
     const lintMessages = document.getElementById('lintMessages');
     const selectFileButton = document.getElementById('selectFileButton');
+
+    let code_ = null;
+    let path_ = null;
 
     selectFileButton.addEventListener('click', () => {
       fileInput.click();
@@ -91,7 +99,7 @@
 
     function lint(code, file) {
       try {
-        const result = lint_html(code, file);
+        const result = lint_html(code, file, contextCnt.value);
         if (result != "") {
           lintMessages.value = result;
         } else {
@@ -111,15 +119,16 @@
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-        const text = await response.text();
-        lint(new TextEncoder().encode(text), url);
+        code_ = new TextEncoder().encode(await response.text());
+        path_ = url;
+        lint(code_, path_);
       } catch (err) {
         lintMessages.value = '';
         errorBox.textContent = 'Error fetching file: ' + err.message;
       }
     })
 
-    fileInput.addEventListener('change', function(event) {
+    fileInput.addEventListener('change', (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -128,13 +137,21 @@
       fileInput.value = '';
 
       const reader = new FileReader();
-      reader.onload = () => lint(new Uint8Array(reader.result), file.name);
+      code_ = new Uint8Array(reader.result);
+      path_ = file.name;
+      reader.onload = () => lint(code_, path_);
       reader.onerror = () => {
         lintMessages.value = '';
         errorBox.textContent = 'Error reading file: ' + reader.error;
       };
 
       reader.readAsArrayBuffer(file);
+    });
+
+    contextCnt.addEventListener('change', (event) => {
+      if (!code_ || !path_) return;
+
+      lint(code_, path_);
     });
 
   </script>
