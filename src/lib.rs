@@ -87,7 +87,7 @@ mod wasm {
     pub fn lint_html(code: Vec<u8>, path: String) -> Result<String, String> {
         fn lint_impl(code: Vec<u8>, path: PathBuf) -> Result<String, Error> {
             let opts = Opts {
-                extra_lines: Some((2, 2)),
+                extra_lines: (2, 2),
                 ..Default::default()
             };
             let mut report = Vec::new();
