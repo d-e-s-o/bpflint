@@ -86,10 +86,14 @@ mod wasm {
     #[wasm_bindgen]
     pub fn lint_html(code: Vec<u8>, path: String) -> Result<String, String> {
         fn lint_impl(code: Vec<u8>, path: PathBuf) -> Result<String, Error> {
+            let opts = Opts {
+                extra_lines: Some((2, 2)),
+                ..Default::default()
+            };
             let mut report = Vec::new();
             let matches = lint(&code)?;
             for m in matches {
-                let () = report_terminal(&m, &code, &path, &mut report)?;
+                let () = report_terminal_opts(&m, &code, &path, &opts, &mut report)?;
             }
             let report =
                 String::from_utf8(report).context("generated report contains invalid UTF-8")?;
