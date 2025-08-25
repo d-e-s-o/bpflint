@@ -10,12 +10,6 @@ Arguments:
           Use '@file' syntax to include a (newline separated) list of files from 'file'.
 
 Options:
-      --print-lints
-          Print a list of available lints
-
-  -v, --verbose...
-          Increase verbosity (can be supplied multiple times)
-
   -B, --before <BEFORE>
           Number of lines to show before the lint match
 
@@ -24,6 +18,12 @@ Options:
 
   -C, --context <CONTEXT>
           Number of lines to show before and after the lint match
+
+      --print-lints
+          Print a list of available lints
+
+  -v, --verbose...
+          Increase verbosity (can be supplied multiple times)
 
   -h, --help
           Print help (see a summary with '-h')
