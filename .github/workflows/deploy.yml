@@ -31,7 +31,7 @@ jobs:
           cargo build --release --target=wasm32-unknown-unknown
           cargo build --features='deploy' --release --target=wasm32-unknown-unknown
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: 'www/'
       - name: Deploy to GitHub Pages
