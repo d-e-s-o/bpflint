@@ -232,12 +232,12 @@ mod tests {
     #[test]
     fn missing_message_property() {
         let code = indoc! { r#"
-          test_fn(/* doesn't matter */);
+            test_fn(/* doesn't matter */);
         "# };
         let lint = indoc! { r#"
-          (call_expression
-              function: (identifier) @function (#eq? @function "test_fn")
-          )
+            (call_expression
+                function: (identifier) @function (#eq? @function "test_fn")
+            )
         "# };
         let err = lint_multi(code.as_bytes(), &[("test_fn", lint)]).unwrap_err();
         assert_eq!(
@@ -252,13 +252,13 @@ mod tests {
     #[test]
     fn internal_capture_reporting() {
         let lint_bar = indoc! { r#"
-          (call_expression
-              function: (identifier) @__function (#eq? @__function "bar")
-              (#set! "message" "bar")
-          )
+            (call_expression
+                function: (identifier) @__function (#eq? @__function "bar")
+                (#set! "message" "bar")
+            )
         "# };
         let code = indoc! { r#"
-          bar();
+            bar();
         "# };
         let matches = lint_multi(code.as_bytes(), &[("bar", lint_bar)]).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
@@ -300,15 +300,15 @@ mod tests {
     #[test]
     fn basic_linting() {
         let code = indoc! { r#"
-          /* A handler for something */
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx)
-          {
-              struct task_struct *prev = (struct task_struct *)ctx[1];
-              struct event event = {0};
-              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-              return 0;
-          }
+            /* A handler for something */
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx)
+            {
+                struct task_struct *prev = (struct task_struct *)ctx[1];
+                struct event event = {0};
+                bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+                return 0;
+            }
         "# };
 
         let matches = lint(code.as_bytes()).unwrap();
@@ -333,14 +333,14 @@ mod tests {
     #[test]
     fn sorted_match_reporting() {
         let lint_bar = indoc! { r#"
-          (call_expression
-              function: (identifier) @function (#eq? @function "bar")
-              (#set! "message" "bar")
-          )
+            (call_expression
+                function: (identifier) @function (#eq? @function "bar")
+                (#set! "message" "bar")
+            )
         "# };
         let code = indoc! { r#"
-          bar();
-          foo();
+            bar();
+            foo();
         "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO, ("bar", lint_bar)]).unwrap();
         assert_eq!(matches.len(), 2);
@@ -352,12 +352,12 @@ mod tests {
     #[test]
     fn lint_disabling() {
         let code = indoc! { r#"
-          /* bpflint: disable=foo */
-          foo();
-          // bpflint: disable=foo
-          foo();
-          // bpflint: disable=all
-          foo();
+            /* bpflint: disable=foo */
+            foo();
+            // bpflint: disable=foo
+            foo();
+            // bpflint: disable=all
+            foo();
         "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
@@ -367,21 +367,21 @@ mod tests {
     #[test]
     fn lint_disabling_recursive() {
         let code = indoc! { r#"
-          /* bpflint: disable=foo */
-          {
-              {
-                  foo();
-              }
-          }
+            /* bpflint: disable=foo */
+            {
+                {
+                    foo();
+                }
+            }
         "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
         let code = indoc! { r#"
-          /* bpflint: disable=foo */
-          void test_fn(void) {
-              foo();
-          }
+            /* bpflint: disable=foo */
+            void test_fn(void) {
+                foo();
+            }
         "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
@@ -391,22 +391,22 @@ mod tests {
     #[test]
     fn lint_invalid_disabling() {
         let code = indoc! { r#"
-          /* bpflint: disabled=foo */
-          foo();
-          /* disabled=foo */
-          foo();
-          // disabled=foo
-          foo();
-          // bpflint: foo
-          foo();
-          // bpflint: disable=bar
-          foo();
+            /* bpflint: disabled=foo */
+            foo();
+            /* disabled=foo */
+            foo();
+            // disabled=foo
+            foo();
+            // bpflint: foo
+            foo();
+            // bpflint: disable=bar
+            foo();
 
-          void test_fn(void) {
-              /* bpflint: disable=foo */
-              foobar();
-              foo();
-          }
+            void test_fn(void) {
+                /* bpflint: disable=foo */
+                foobar();
+                foo();
+            }
         "# };
         let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");

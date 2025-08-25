@@ -11,26 +11,26 @@ use crate::util::lint_report;
 #[test]
 fn basic() {
     let code = indoc! { r#"
-      SEC("tp_btf/irq_handler_entry")
-      int on_irq_handler_entry(u64 *cxt)
-      {
-        struct task_struct *task;
+        SEC("tp_btf/irq_handler_entry")
+        int on_irq_handler_entry(u64 *cxt)
+        {
+          struct task_struct *task;
 
-        task = (struct task_struct *)bpf_get_current_task();
-        if (!task)
-          return 0;
+          task = (struct task_struct *)bpf_get_current_task();
+          if (!task)
+            return 0;
 
-        return 1;
-      }
+          return 1;
+        }
     "# };
 
     let expected = indoc! { r#"
-      warning: [get-current-task] bpf_get_current_task() is difficult to use; consider using the stricter typed bpf_get_current_task_btf() instead; refer to bpf-helpers(7)
-        --> <stdin>:5:31
-        | 
-      5 |   task = (struct task_struct *)bpf_get_current_task();
-        |                                ^^^^^^^^^^^^^^^^^^^^
-        | 
+        warning: [get-current-task] bpf_get_current_task() is difficult to use; consider using the stricter typed bpf_get_current_task_btf() instead; refer to bpf-helpers(7)
+          --> <stdin>:5:31
+          | 
+        5 |   task = (struct task_struct *)bpf_get_current_task();
+          |                                ^^^^^^^^^^^^^^^^^^^^
+          | 
     "# };
     assert_eq!(lint_report(code), expected);
 }
@@ -41,15 +41,15 @@ fn basic() {
 #[test]
 fn whitespace_call() {
     let code = indoc! { r#"
-      bpf_get_current_task(  );
+        bpf_get_current_task(  );
     "# };
     let expected = indoc! { r#"
-      warning: [get-current-task] bpf_get_current_task() is difficult to use; consider using the stricter typed bpf_get_current_task_btf() instead; refer to bpf-helpers(7)
-        --> <stdin>:0:0
-        | 
-      0 | bpf_get_current_task(  );
-        | ^^^^^^^^^^^^^^^^^^^^
-        | 
+        warning: [get-current-task] bpf_get_current_task() is difficult to use; consider using the stricter typed bpf_get_current_task_btf() instead; refer to bpf-helpers(7)
+          --> <stdin>:0:0
+          | 
+        0 | bpf_get_current_task(  );
+          | ^^^^^^^^^^^^^^^^^^^^
+          | 
     "# };
     assert_eq!(lint_report(code), expected);
 }
@@ -60,13 +60,13 @@ fn whitespace_call() {
 #[test]
 fn no_match_different_signature() {
     let code = indoc! { r#"
-      task = (struct task_struct *)bpf_get_current_task("foobar");
+        task = (struct task_struct *)bpf_get_current_task("foobar");
     "# };
     assert_eq!(lint_report(code), "");
 
     // TODO: This construct should actually be accepted. Sigh.
     let code = indoc! { r#"
-      task = (struct task_struct *)bpf_get_current_task(/* WRONG */);
+        task = (struct task_struct *)bpf_get_current_task(/* WRONG */);
     "# };
     assert_eq!(lint_report(code), "");
 }

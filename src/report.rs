@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn empty_range_reporting() {
         let code = indoc! { r#"
-          int main() {}
+            int main() {}
         "# };
 
         let m = LintMatch {
@@ -232,8 +232,8 @@ mod tests {
             report_terminal(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
-          warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
-            --> ./no_bytes.c:0:0
+            warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
+              --> ./no_bytes.c:0:0
         "# };
         assert_eq!(report, expected);
     }
@@ -242,14 +242,14 @@ mod tests {
     #[test]
     fn multi_line_report() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx) {
-              bpf_probe_read(
-                event.comm,
-                TASK_COMM_LEN,
-                prev->comm);
-              return 0;
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx) {
+                bpf_probe_read(
+                  event.comm,
+                  TASK_COMM_LEN,
+                  prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -265,15 +265,15 @@ mod tests {
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
-          warning: [probe-read] bpf_probe_read() is deprecated
-            --> <stdin>:2:4
-            | 
-          2 |  /     bpf_probe_read(
-          3 |  |       event.comm,
-          4 |  |       TASK_COMM_LEN,
-          5 |  |       prev->comm);
-            |  |_________________^
-            | 
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:2:4
+              | 
+            2 |  /     bpf_probe_read(
+            3 |  |       event.comm,
+            4 |  |       TASK_COMM_LEN,
+            5 |  |       prev->comm);
+              |  |_________________^
+              | 
         "# };
         assert_eq!(report, expected);
     }
@@ -283,19 +283,19 @@ mod tests {
     #[test]
     fn multi_line_report_line_numbers() {
         let code = indoc! { r#"
-          /* A
-           * bunch
-           * of
-           * filling
-           */
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx) {
-              bpf_probe_read(
-                event.comm,
-                TASK_COMM_LEN,
-                prev->comm);
-              return 0;
-          }
+            /* A
+             * bunch
+             * of
+             * filling
+             */
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx) {
+                bpf_probe_read(
+                  event.comm,
+                  TASK_COMM_LEN,
+                  prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -311,15 +311,15 @@ mod tests {
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
-          warning: [probe-read] bpf_probe_read() is deprecated
-            --> <stdin>:7:4
-             | 
-           7 |  /     bpf_probe_read(
-           8 |  |       event.comm,
-           9 |  |       TASK_COMM_LEN,
-          10 |  |       prev->comm);
-             |  |_________________^
-             | 
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:7:4
+               | 
+             7 |  /     bpf_probe_read(
+             8 |  |       event.comm,
+             9 |  |       TASK_COMM_LEN,
+            10 |  |       prev->comm);
+               |  |_________________^
+               | 
         "# };
         assert_eq!(report, expected);
     }
@@ -328,14 +328,14 @@ mod tests {
     #[test]
     fn terminal_reporting() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx)
-          {
-              struct task_struct *prev = (struct task_struct *)ctx[1];
-              struct event event = {0};
-              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-              return 0;
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx)
+            {
+                struct task_struct *prev = (struct task_struct *)ctx[1];
+                struct event event = {0};
+                bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -351,12 +351,12 @@ mod tests {
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
-          warning: [probe-read] bpf_probe_read() is deprecated
-            --> <stdin>:6:4
-            | 
-          6 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-            |     ^^^^^^^^^^^^^^
-            | 
+            warning: [probe-read] bpf_probe_read() is deprecated
+              --> <stdin>:6:4
+              | 
+            6 |     bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+              |     ^^^^^^^^^^^^^^
+              | 
         "# };
         assert_eq!(report, expected);
     }
@@ -366,10 +366,10 @@ mod tests {
     #[test]
     fn report_top_most_line() {
         let code = indoc! { r#"
-          SEC("kprobe/test")
-          int handle__test(void)
-          {
-          }
+            SEC("kprobe/test")
+            int handle__test(void)
+            {
+            }
         "# };
 
         let m = LintMatch {
@@ -385,12 +385,12 @@ mod tests {
         let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
-          warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
-            --> <stdin>:0:4
-            | 
-          0 | SEC("kprobe/test")
-            |     ^^^^^^^^^^^^^
-            | 
+            warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
+              --> <stdin>:0:4
+              | 
+            0 | SEC("kprobe/test")
+              |     ^^^^^^^^^^^^^
+              | 
         "# };
         assert_eq!(report, expected);
     }
@@ -400,14 +400,14 @@ mod tests {
     #[test]
     fn report_terminal_opts_none_context() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx)
-          {
-              struct task_struct *prev = (struct task_struct *)ctx[1];
-              struct event event = {0};
-              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-              return 0;
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx)
+            {
+                struct task_struct *prev = (struct task_struct *)ctx[1];
+                struct event event = {0};
+                bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -441,14 +441,14 @@ mod tests {
     #[test]
     fn report_terminal_opts_with_context() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx)
-          {
-              struct task_struct *prev = (struct task_struct *)ctx[1];
-              struct event event = {0};
-              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-              return 0;
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx)
+            {
+                struct task_struct *prev = (struct task_struct *)ctx[1];
+                struct event event = {0};
+                bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -492,14 +492,14 @@ mod tests {
     #[test]
     fn report_terminal_opts_multiline_with_context() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx) {
-              bpf_probe_read(
-                event.comm,
-                TASK_COMM_LEN,
-                prev->comm);
-              return 0;
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx) {
+                bpf_probe_read(
+                  event.comm,
+                  TASK_COMM_LEN,
+                  prev->comm);
+                return 0;
+            }
         "# };
 
         let m = LintMatch {
@@ -545,10 +545,10 @@ mod tests {
     #[test]
     fn report_terminal_opts_insufficient_context_before() {
         let code = indoc! { r#"
-          SEC("kprobe/test")
-          int handle__test(void)
-          {
-          }
+            SEC("kprobe/test")
+            int handle__test(void)
+            {
+            }
         "# };
 
         let m = LintMatch {
@@ -591,11 +591,11 @@ mod tests {
     #[test]
     fn report_terminal_opts_insufficient_context_after() {
         let code = indoc! { r#"
-          SEC("tp_btf/sched_switch")
-          int handle__sched_switch(u64 *ctx)
-          {
-              bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-          }
+            SEC("tp_btf/sched_switch")
+            int handle__sched_switch(u64 *ctx)
+            {
+                bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
+            }
         "# };
 
         let m = LintMatch {
