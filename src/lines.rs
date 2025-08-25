@@ -174,9 +174,9 @@ mod tests {
         assert_eq!(lines.next(), None);
 
         let code = indoc! { br#"
-          abc
-          cde
-          fgh
+            abc
+            cde
+            fgh
         "# };
 
         let mut lines = Lines::new(code, 0);
@@ -213,9 +213,9 @@ mod tests {
         assert_eq!(lines.next_back(), None);
 
         let code = indoc! { br#"
-          abc
-          cde
-          fgh
+            abc
+            cde
+            fgh
         "# };
 
         let mut lines = Lines::new(code, 0);
