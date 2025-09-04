@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
       - run: npm install --global js-beautify
       - run: js-beautify --replace --indent-size 2 --end-with-newline www/index.html
       - run: git diff --color=always --exit-code
