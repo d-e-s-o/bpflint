@@ -5,6 +5,8 @@ mod validate;
 
 // Tests for individual lints go below here.
 
+#[path = "core-read.rs"]
+mod core_read;
 #[path = "get-current-task.rs"]
 mod get_current_task;
 #[path = "probe-read.rs"]

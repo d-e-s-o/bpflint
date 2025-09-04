@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added `core-read` lint
 - Added `get-current-task` lint
 - Added `report_terminal_opts` function and `Opts` type
 - Fixed line number alignment for multi-line matches straddling a power
