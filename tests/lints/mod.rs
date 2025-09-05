@@ -9,6 +9,8 @@ mod validate;
 mod get_current_task;
 #[path = "probe-read.rs"]
 mod probe_read;
+#[path = "core-read.rs"]
+mod core_read;
 #[path = "unstable-attach-point.rs"]
 mod unstable_attach_point;
 #[path = "untyped-map-member.rs"]
