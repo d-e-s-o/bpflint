@@ -1,4 +1,4 @@
-name: Update tree-sitter-0.21 branch
+name: Update tree-sitter-0.22 branch
 
 on:
   push:
@@ -21,6 +21,6 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Automation'
           git config --global user.email 'ci_activity@noreply.github.com'
-          git checkout tree-sitter-0.21
+          git checkout tree-sitter-0.22
           git merge origin/main
-          git push origin HEAD:refs/heads/tree-sitter-0.21
+          git push origin HEAD:refs/heads/tree-sitter-0.22
