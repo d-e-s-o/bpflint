@@ -37,18 +37,24 @@ int handle__sched_switch(u64 *ctx)
         struct running_task *t;
         if (!(t = bpf_map_lookup_elem(&running_tasks, &cpu)))
                 return 0;
+
+        int prev_pid = 0;
+        bpf_core_read(&prev_pid, sizeof(prev_pid), &prev->pid);
+        int next_prev_pid = BPF_CORE_READ(next, pid);
+
         if (t->running_at && prev->pid) {
                 s64 dur = now - t->running_at;
                 if (dur > runtime_thresh_ns) {
                         struct event event = {0};
                         bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
                         bpf_probe_read(event.bt, sizeof(t->bt), t->bt);
-                        event.pid = prev->pid;
+                        event.pid = prev_pid;
                         event.duration = dur;
                         event.bt_sample_cnt = t->bt_sample_cnt;
                         bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
                 }
         }
+
         t->running_at = 0;
         t->bt_at = 0;
         if (kthread_only && !(next->flags & PF_KTHREAD))
