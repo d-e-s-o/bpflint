@@ -24,11 +24,6 @@ C programs.
 
 ### 📚 Frequently Asked Questions (FAQ)
 
-#### ❓ **Q: Why are there so few lints?**
-**A:** This repository provides basic infrastructure components to build
-       on, but we hope for contributions from the community for best
-       practices and how to formalize them.
-
 #### ❓ **Q: I am interested in helping out. How can I get started?**
 **A:** We have a list of [issues](https://github.com/d-e-s-o/bpflint/issues)
        with ideas for contributions, which mark a good starting point.
