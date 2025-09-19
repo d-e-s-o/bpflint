@@ -22,13 +22,13 @@ fn basic() {
     "# };
 
     let expected = indoc! { r#"
-        warning: [core-read] bpf_core_read() and BPF_CORE_READ() are deprecated and replaced by bpf_core_cast(); refer to https://docs.ebpf.io/ebpf-library/libbpf/ebpf/bpf_core_cast/
+        warning: [core-read] bpf_core_read() and BPF_CORE_READ() have been subsumed by bpf_core_cast() -- consider using it instead; refer to https://docs.ebpf.io/ebpf-library/libbpf/ebpf/bpf_core_cast/
           --> <stdin>:6:4
           | 
         6 |     bpf_core_read(&prev_pid, sizeof(prev_pid), &prev->pid);
           |     ^^^^^^^^^^^^^
           | 
-        warning: [core-read] bpf_core_read() and BPF_CORE_READ() are deprecated and replaced by bpf_core_cast(); refer to https://docs.ebpf.io/ebpf-library/libbpf/ebpf/bpf_core_cast/
+        warning: [core-read] bpf_core_read() and BPF_CORE_READ() have been subsumed by bpf_core_cast() -- consider using it instead; refer to https://docs.ebpf.io/ebpf-library/libbpf/ebpf/bpf_core_cast/
           --> <stdin>:7:24
           | 
         7 |     int next_prev_pid = BPF_CORE_READ(next, pid);
