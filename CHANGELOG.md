@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.1.3
+-----
 - Added `core-read` lint
 - Added `get-current-task` lint
 - Added `report_terminal_opts` function and `Opts` type
