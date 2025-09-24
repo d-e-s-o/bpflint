@@ -1,9 +1,10 @@
 [package]
 name = "bpflinter"
 version = "0.1.2"
-edition = "2024"
-license = "MIT"
-repository = "https://github.com/d-e-s-o/bpflint"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 readme = "README.md"
 categories = [
   "accessibility",
