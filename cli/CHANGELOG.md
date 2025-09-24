@@ -1,6 +1,6 @@
-Unreleased
-----------
-- Added `--after`/`-A`, `--before`/`-B, and `--context`/`-C` arguments
+0.1.3
+-----
+- Added `--after`/`-A`, `--before`/`-B`, and `--context`/`-C` arguments
   to control amount of source code context to show
 
 
