@@ -57,6 +57,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - run: cargo clippy --no-deps --all-targets --workspace -- -A unknown_lints -D warnings
   rustfmt:
     name: Check Rust code formatting

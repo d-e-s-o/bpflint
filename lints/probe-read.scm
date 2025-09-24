@@ -5,5 +5,4 @@
                   (expression)
                   (expression)
                )
-    (#set! "message" "bpf_probe_read() is deprecated and replaced by bpf_probe_user() and bpf_probe_kernel(); refer to bpf-helpers(7)")
 )

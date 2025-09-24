@@ -1,0 +1,13 @@
+[package]
+name = "make"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "make"
+path = "make.rs"
+
+[dependencies]
+tiny_http = { version = "0.12", default-features = false }

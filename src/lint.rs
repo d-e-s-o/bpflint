@@ -44,22 +44,34 @@ impl From<tree_sitter::Range> for Range {
 }
 
 
-/// Meta data about a lint.
+/// A lint.
 #[derive(Clone, Debug)]
-pub struct LintMeta {
+pub struct Lint {
     /// The lint's name.
     pub name: String,
-    /// The struct is non-exhaustive and open to extension.
-    #[doc(hidden)]
-    pub _non_exhaustive: (),
+    /// The lints source code in the form of a [tree-sitter
+    /// query][query].
+    ///
+    /// [query]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/
+    pub code: String,
+    /// The message reported in a [`LintMatch`][LintMatch::message].
+    pub message: String,
+}
+
+impl AsRef<Lint> for Lint {
+    #[inline]
+    fn as_ref(&self) -> &Lint {
+        self
+    }
 }
 
 
 /// Retrieve the list of lints shipped with the library.
-pub fn builtin_lints() -> impl ExactSizeIterator<Item = LintMeta> + DoubleEndedIterator {
-    lints::LINTS.iter().map(|(name, _code)| LintMeta {
+pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator + Clone {
+    lints::LINTS.iter().map(|(name, code, message)| Lint {
         name: name.to_string(),
-        _non_exhaustive: (),
+        code: code.to_string(),
+        message: message.to_string(),
     })
 }
 
@@ -121,7 +133,13 @@ fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
 }
 
 
-fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Result<Vec<LintMatch>> {
+fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
+    let Lint {
+        name: lint_name,
+        code: lint_src,
+        message: lint_msg,
+    } = lint;
+
     let query =
         Query::new(&LANGUAGE.into(), lint_src).with_context(|| "failed to compile lint query")?;
     let mut query_cursor = QueryCursor::new();
@@ -142,19 +160,9 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
                 continue
             }
 
-            let settings = query.property_settings(m.pattern_index);
-            let setting = settings
-                .iter()
-                .find(|prop| &*prop.key == "message")
-                .with_context(|| format!("{lint_name}: failed to find `message` property"))?;
-
             let r#match = LintMatch {
                 lint_name: lint_name.to_string(),
-                message: setting
-                    .value
-                    .as_ref()
-                    .with_context(|| format!("{lint_name}: `message` property has no value set"))?
-                    .to_string(),
+                message: lint_msg.to_string(),
                 range: Range::from(capture.node.range()),
             };
             let () = results.push(r#match);
@@ -167,17 +175,58 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
     Ok(results)
 }
 
-fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
+
+/// Lint code using the provided set of lints.
+///
+/// Matches are reported in source code order.
+///
+/// - `code` is the source code in question, for example as read from a
+///   file
+/// - `lints` the lints to use for linting the provided source code
+///
+/// # Examples
+/// ```rust
+/// # use bpflint::builtin_lints;
+/// # use bpflint::lint_custom;
+/// # use bpflint::Lint;
+/// let bpf_printk = Lint {
+///     name: "bpf_printk-usage".to_string(),
+///     code: r#"
+///         (call_expression
+///             function: (identifier) @function (#eq? @function "bpf_printk")
+///         )
+///       "#.to_string(),
+///     message: "use bpf_printk only for debugging!".to_string(),
+/// };
+///
+/// let code = br#"
+///     SEC("tp_btf/sched_switch")
+///     int handle__sched_switch(u64 *ctx) {
+///         bpf_printk("context %p\n", ctx);
+///         return 0;
+///     }
+/// "#;
+///
+/// // We want to include the built-in lints as well, not just our
+/// // `bpf_printk` usage flagger.
+/// let matches = lint_custom(code, builtin_lints().chain([bpf_printk])).unwrap();
+/// assert_eq!(matches.len(), 1);
+/// ```
+pub fn lint_custom<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
+where
+    I: IntoIterator<Item = L>,
+    L: AsRef<Lint> + 'l,
+{
     let mut parser = Parser::new();
     let () = parser
         .set_language(&LANGUAGE.into())
-        .context("failed to load C parser")?;
+        .context("failed to load BPF C language parser")?;
     let tree = parser
         .parse(code, None)
         .context("failed to provided source code")?;
     let mut results = Vec::new();
-    for (lint_name, lint_src) in lints {
-        let matches = lint_impl(&tree, code, lint_src, lint_name)?;
+    for lint in lints {
+        let matches = lint_impl(&tree, code, lint.as_ref())?;
         let () = results.extend(matches);
     }
 
@@ -196,14 +245,14 @@ fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
     Ok(results)
 }
 
-/// Lint code using the default set of lints.
+/// Lint code using the default ([built-in][builtin_lints]) set of lints.
 ///
 /// Matches are reported in source code order.
 ///
 /// - `code` is the source code in question, for example as read from a
 ///   file
 pub fn lint(code: &[u8]) -> Result<Vec<LintMatch>> {
-    lint_multi(code, &lints::LINTS)
+    lint_custom(code, builtin_lints())
 }
 
 
@@ -216,81 +265,61 @@ mod tests {
     use crate::Point;
 
 
-    static LINT_FOO: (&str, &str) = (
-        "foo",
-        r#"
-(call_expression
-    function: (identifier) @function (#eq? @function "foo")
-    (#set! "message" "foo")
-)
-        "#,
-    );
-
-
-    /// Check that a missing `message` property is being flagged
-    /// appropriately.
-    #[test]
-    fn missing_message_property() {
-        let code = indoc! { r#"
-            test_fn(/* doesn't matter */);
-        "# };
-        let lint = indoc! { r#"
-            (call_expression
-                function: (identifier) @function (#eq? @function "test_fn")
-            )
-        "# };
-        let err = lint_multi(code.as_bytes(), &[("test_fn", lint)]).unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "test_fn: failed to find `message` property",
-            "{err}"
-        );
+    fn lint_foo() -> Lint {
+        Lint {
+            name: "foo".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "foo")
+                )
+            "# }
+            .to_string(),
+            message: "foo".to_string(),
+        }
     }
+
 
     /// Make sure that internal captures (named as "__xxx") are not
     /// reported as matches.
     #[test]
     fn internal_capture_reporting() {
-        let lint_bar = indoc! { r#"
-            (call_expression
-                function: (identifier) @__function (#eq? @__function "bar")
-                (#set! "message" "bar")
-            )
-        "# };
         let code = indoc! { r#"
             bar();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[("bar", lint_bar)]).unwrap();
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @__function (#eq? @__function "bar")
+                )
+            "# }
+            .to_string(),
+            message: "a message".to_string(),
+        };
+        let matches = lint_custom(code.as_bytes(), [lint]).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
     }
 
-    /// Check that `tree-sitter` queries represented by built-in lints
-    /// exhibit the expected set of properties.
+    /// Check that our built-in lints exhibit the expected set of
+    /// properties.
     #[test]
-    fn validate_lint_queries() {
-        for (name, code) in lints::LINTS {
-            let query = Query::new(&LANGUAGE.into(), code).unwrap();
+    fn validate_lints() {
+        for lint in builtin_lints() {
+            let Lint {
+                name,
+                code,
+                message,
+            } = lint;
+            let query = Query::new(&LANGUAGE.into(), &code).unwrap();
             assert_eq!(
                 query.pattern_count(),
                 1,
                 "lint `{name}` has too many pattern matches: only a single one is supported currently"
             );
 
-            let settings = query.property_settings(0);
-            let setting = settings
-                .iter()
-                .find(|prop| &*prop.key == "message")
-                .expect("`message` property is missing for lint `{name}`");
-            let message = setting
-                .value
-                .as_ref()
-                .unwrap_or_else(|| {
-                    panic!("lint `{name}` has no `message` property has no value set")
-                })
-                .as_ref();
             let last = message.chars().last().unwrap();
             assert!(
-                !['.', '!', '?'].contains(&last),
+                !['.', '!', '?', '\n'].contains(&last),
                 "`message` property of lint `{name}` should be concise and not a fully blown sentence with punctuation"
             );
         }
@@ -332,17 +361,21 @@ mod tests {
     /// Check that reported matches are sorted by line number.
     #[test]
     fn sorted_match_reporting() {
-        let lint_bar = indoc! { r#"
-            (call_expression
-                function: (identifier) @function (#eq? @function "bar")
-                (#set! "message" "bar")
-            )
-        "# };
         let code = indoc! { r#"
             bar();
             foo();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO, ("bar", lint_bar)]).unwrap();
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom(code.as_bytes(), [lint_foo(), lint]).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
         assert_eq!(matches[1].lint_name, "foo");
@@ -359,7 +392,7 @@ mod tests {
             // bpflint: disable=all
             foo();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -374,7 +407,7 @@ mod tests {
                 }
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
         let code = indoc! { r#"
@@ -383,7 +416,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -408,7 +441,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
     }
 }

@@ -146,10 +146,11 @@ pub fn report_terminal_opts(
         for (idx, row) in (start_row..=end_row).enumerate() {
             let lprefix = format!("{row:width$} | ");
             let c = if idx == 0 { "/" } else { "|" };
-            // SANITY: There will always be another line available,
-            //         given that we are within the bounds of `range`,
-            //         which maps to source code lines.
-            let line = lines.next().unwrap();
+            // Our `Lines` logic may not report a trailing newline if it
+            // is completely empty, but `tree-sitter` may actually
+            // report it. If that's the case just ignore this empty
+            // line.
+            let Some(line) = lines.next() else { break };
             writeln!(writer, "{lprefix} {c} {}", String::from_utf8_lossy(line))?;
         }
         writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
@@ -289,6 +290,44 @@ mod tests {
             10 |  |       prev->comm);
                |  |_________________^
                | 
+        "# };
+        assert_eq!(report, expected);
+    }
+
+    /// Check that we "correctly" report matches effectively spanning
+    /// the end of the file.
+    ///
+    /// This can happen for queries that use `preproc_def`, because it
+    /// includes trailing newlines in its match.
+    #[test]
+    fn multi_line_trailing_line_empty() {
+        let code = indoc! { r#"
+            #define DONT_ENABLE 1
+        "# };
+        let m = LintMatch {
+            lint_name: "lint".to_string(),
+            message: "message".to_string(),
+            range: Range {
+                bytes: 0..21,
+                start_point: Point { row: 0, col: 0 },
+                end_point: Point { row: 1, col: 0 },
+            },
+        };
+
+        let mut report = Vec::new();
+        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let report = String::from_utf8(report).unwrap();
+
+        // Note that ideally we'd fine a way to just highlight the
+        // entire line instead of using the multi-line reporting path
+        // here, but it's not trivial to do so.
+        let expected = indoc! { r#"
+            warning: [lint] message
+              --> <stdin>:0:0
+              | 
+            0 |  / #define DONT_ENABLE 1
+              |  |^
+              | 
         "# };
         assert_eq!(report, expected);
     }

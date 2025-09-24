@@ -2,6 +2,7 @@
 members = [
   ".",
   "cli",
+  "make",
 ]
 
 [workspace.package]
@@ -42,14 +43,11 @@ debug = []
 # project. Ideally we could use something along the lines of a
 # post-build stage, but discussions surrounding that feature are still
 # ongoing (https://github.com/rust-lang/cargo/issues/545).
-deploy = []
+deploy = ["dep:wasm-bindgen-cli-support"]
 
 [build-dependencies]
 anyhow = "1.0"
-wasm-bindgen-cli-support = { version = "0.2", default-features = false }
-
-[target.'cfg(target_arch = "wasm32")'.build-dependencies]
-wasm-bindgen-cli-support = { version = "0.2", default-features = false }
+wasm-bindgen-cli-support = { version = "0.2", default-features = false, optional = true }
 
 [dependencies]
 anyhow = "1.0"

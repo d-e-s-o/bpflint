@@ -3,7 +3,7 @@ use std::fs::read_dir;
 use std::path::Path;
 use std::path::PathBuf;
 
-use bpflint::LintMeta;
+use bpflint::Lint;
 use bpflint::builtin_lints;
 
 
@@ -25,7 +25,7 @@ fn validate_builtin_lints() {
     let () = lints.sort();
 
     let mut expected = builtin_lints()
-        .map(|LintMeta { name, .. }| name)
+        .map(|Lint { name, .. }| name)
         .collect::<Vec<_>>();
     let () = expected.sort();
 
@@ -76,7 +76,7 @@ mod slug {
 /// Check that our lint names comply with repository policy.
 #[test]
 fn builtin_lint_names() {
-    for LintMeta { name, .. } in builtin_lints() {
+    for Lint { name, .. } in builtin_lints() {
         assert!(
             is_lower_ascii_slug(&name),
             "lint `{name}` contains invalid characters (allowed: [a-z] and `-`)"
@@ -91,7 +91,7 @@ fn lint_test_assurance() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let lint_test_dir = manifest_dir.join("tests").join("lints");
 
-    for LintMeta { name, .. } in builtin_lints() {
+    for Lint { name, .. } in builtin_lints() {
         // Check that a test exists. It could still not be wired up, but
         // it's better than nothing.
         assert!(
