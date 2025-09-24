@@ -13,8 +13,8 @@
 //! ```c
 //! /* bpflint: disable=probe-read */
 //! void handler(void) {
-//!      void *dst = /* ... */
-//!      bpf_probe_read(dst, /* ... */);
+//!     void *dst = /* ... */
+//!     bpf_probe_read(dst, /* ... */);
 //! }
 //! ```
 //!
