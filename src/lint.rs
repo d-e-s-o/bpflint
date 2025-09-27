@@ -45,22 +45,24 @@ impl From<tree_sitter::Range> for Range {
 }
 
 
-/// Meta data about a lint.
+/// A lint.
 #[derive(Clone, Debug)]
-pub struct LintMeta {
+pub struct Lint {
     /// The lint's name.
     pub name: String,
-    /// The struct is non-exhaustive and open to extension.
-    #[doc(hidden)]
-    pub _non_exhaustive: (),
+    /// The lints source code in the form of a [tree-sitter
+    /// query][query].
+    ///
+    /// [query]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/
+    pub code: String,
 }
 
 
 /// Retrieve the list of lints shipped with the library.
-pub fn builtin_lints() -> impl ExactSizeIterator<Item = LintMeta> + DoubleEndedIterator {
-    lints::LINTS.iter().map(|(name, _code)| LintMeta {
+pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator {
+    lints::LINTS.iter().map(|(name, code)| Lint {
         name: name.to_string(),
-        _non_exhaustive: (),
+        code: code.to_string(),
     })
 }
 

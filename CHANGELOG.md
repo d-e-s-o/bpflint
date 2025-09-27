@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Renamed `LintMeta` to `Lint` and made it exhaustive and user
+  constructible
+
+
 0.1.3
 -----
 - Added `core-read` lint
