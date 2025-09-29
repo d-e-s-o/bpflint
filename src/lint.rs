@@ -57,6 +57,13 @@ pub struct Lint {
     pub code: String,
 }
 
+impl AsRef<Lint> for Lint {
+    #[inline]
+    fn as_ref(&self) -> &Lint {
+        self
+    }
+}
+
 
 /// Retrieve the list of lints shipped with the library.
 pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator {
@@ -124,7 +131,12 @@ fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
 }
 
 
-fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Result<Vec<LintMatch>> {
+fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
+    let Lint {
+        name: lint_name,
+        code: lint_src,
+    } = lint;
+
     let query =
         Query::new(&LANGUAGE.into(), lint_src).with_context(|| "failed to compile lint query")?;
     let mut query_cursor = QueryCursor::new();
@@ -170,7 +182,11 @@ fn lint_impl(tree: &Tree, code: &[u8], lint_src: &str, lint_name: &str) -> Resul
     Ok(results)
 }
 
-fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
+fn lint_multi<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
+where
+    I: IntoIterator<Item = L>,
+    L: AsRef<Lint> + 'l,
+{
     let mut parser = Parser::new();
     let () = parser
         .set_language(&LANGUAGE.into())
@@ -179,8 +195,8 @@ fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
         .parse(code, None)
         .context("failed to provided source code")?;
     let mut results = Vec::new();
-    for (lint_name, lint_src) in lints {
-        let matches = lint_impl(&tree, code, lint_src, lint_name)?;
+    for lint in lints {
+        let matches = lint_impl(&tree, code, lint.as_ref())?;
         let () = results.extend(matches);
     }
 
@@ -206,7 +222,7 @@ fn lint_multi(code: &[u8], lints: &[(&str, &str)]) -> Result<Vec<LintMatch>> {
 /// - `code` is the source code in question, for example as read from a
 ///   file
 pub fn lint(code: &[u8]) -> Result<Vec<LintMatch>> {
-    lint_multi(code, &lints::LINTS)
+    lint_multi(code, builtin_lints())
 }
 
 
@@ -219,15 +235,18 @@ mod tests {
     use crate::Point;
 
 
-    static LINT_FOO: (&str, &str) = (
-        "foo",
-        r#"
-(call_expression
-    function: (identifier) @function (#eq? @function "foo")
-    (#set! "message" "foo")
-)
-        "#,
-    );
+    fn lint_foo() -> Lint {
+        Lint {
+            name: "foo".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "foo")
+                    (#set! "message" "foo")
+                )
+            "# }
+            .to_string(),
+        }
+    }
 
 
     /// Check that a missing `message` property is being flagged
@@ -237,12 +256,16 @@ mod tests {
         let code = indoc! { r#"
             test_fn(/* doesn't matter */);
         "# };
-        let lint = indoc! { r#"
-            (call_expression
-                function: (identifier) @function (#eq? @function "test_fn")
-            )
-        "# };
-        let err = lint_multi(code.as_bytes(), &[("test_fn", lint)]).unwrap_err();
+        let lint = Lint {
+            name: "test_fn".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "test_fn")
+                )
+                "# }
+            .to_string(),
+        };
+        let err = lint_multi(code.as_bytes(), [lint]).unwrap_err();
         assert_eq!(
             err.to_string(),
             "test_fn: failed to find `message` property",
@@ -254,16 +277,20 @@ mod tests {
     /// reported as matches.
     #[test]
     fn internal_capture_reporting() {
-        let lint_bar = indoc! { r#"
-            (call_expression
-                function: (identifier) @__function (#eq? @__function "bar")
-                (#set! "message" "bar")
-            )
-        "# };
         let code = indoc! { r#"
             bar();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[("bar", lint_bar)]).unwrap();
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @__function (#eq? @__function "bar")
+                    (#set! "message" "bar")
+                )
+            "# }
+            .to_string(),
+        };
+        let matches = lint_multi(code.as_bytes(), [lint]).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
     }
 
@@ -335,17 +362,21 @@ mod tests {
     /// Check that reported matches are sorted by line number.
     #[test]
     fn sorted_match_reporting() {
-        let lint_bar = indoc! { r#"
-            (call_expression
-                function: (identifier) @function (#eq? @function "bar")
-                (#set! "message" "bar")
-            )
-        "# };
         let code = indoc! { r#"
             bar();
             foo();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO, ("bar", lint_bar)]).unwrap();
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                    (#set! "message" "bar")
+                )
+            "# }
+            .to_string(),
+        };
+        let matches = lint_multi(code.as_bytes(), [lint_foo(), lint]).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
         assert_eq!(matches[1].lint_name, "foo");
@@ -362,7 +393,7 @@ mod tests {
             // bpflint: disable=all
             foo();
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -377,7 +408,7 @@ mod tests {
                 }
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
         let code = indoc! { r#"
@@ -386,7 +417,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -411,7 +442,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), &[LINT_FOO]).unwrap();
+        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
     }
 }
