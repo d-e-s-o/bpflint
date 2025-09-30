@@ -8,10 +8,12 @@ To better understand queries and the language that they are written in,
 please refer to the official ["Queries" chapter][tree-sitter-queries]
 covering them.
 
-A lint is a regular Query, with the added requirement that it contains a
-`message` [directive][tree-sitter-directives] that explains to the user
-why the pattern being matched on is problematic. For an example please
-refer to the [`probe-read` lint][probe-read-message].
+Being a `tree-sitter` Query, a lint is contained in a `*.scm` file and
+located inside the [`lints/`][lints-dir] directory. It also comes with
+an associated `*.txt` file that contains the message to display to the
+user when a match is found. For an example please refer to the
+[`probe-read` lint][probe-read-lint] and its [message
+file][probe-read-txt].
 
 Furthermore, `tree-sitter` Queries support captures and those captures
 always have a name. **bpflint** treats captures beginning with a double
@@ -76,5 +78,7 @@ and requires no additional tools installed.
 [tree-sitter-queries]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/index.html
 [tree-sitter-bpf-c-bpf.txt]: https://github.com/d-e-s-o/tree-sitter-bpf-c/blob/main/test/corpus/bpf.txt
 [tree-sitter-playground]: https://tree-sitter.github.io/tree-sitter/7-playground.html
-[probe-read-message]: https://github.com/d-e-s-o/bpflint/blob/0dc852fe8690eb04b2b50a220c7e57ba12c4cc6d/lints/probe-read.scm#L8
-[untyped-map-member-int-capture]: https://github.com/d-e-s-o/bpflint/blob/0dc852fe8690eb04b2b50a220c7e57ba12c4cc6d/lints/untyped-map-member.scm#L2
+[lints-dir]: https://github.com/d-e-s-o/bpflint/tree/main/lints
+[probe-read-lint]: https://github.com/d-e-s-o/bpflint/blob/fd22c67984c63d0a6d12c1e5edf5dfec1a5b4c2e/lints/probe-read.scm
+[probe-read-txt]: https://github.com/d-e-s-o/bpflint/blob/fd22c67984c63d0a6d12c1e5edf5dfec1a5b4c2e/lints/probe-read.txt
+[untyped-map-member-int-capture]: https://github.com/d-e-s-o/bpflint/blob/fd22c67984c63d0a6d12c1e5edf5dfec1a5b4c2e/lints/untyped-map-member.scm#L2
