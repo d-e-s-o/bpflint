@@ -41,6 +41,11 @@ fn generate_lints(manifest_dir: &Path) -> Result<()> {
 
         let lint_src = read_to_string(&lint_path)
             .with_context(|| format!("failed to read lint `{}`", lint_path.display()))?;
+        let mut lint_msg_path = lint_path.clone();
+        let _result = lint_msg_path.set_extension("txt");
+        let lint_msg = read_to_string(&lint_msg_path).with_context(|| {
+            format!("failed to read lint message `{}`", lint_msg_path.display())
+        })?;
         let lint_name = entry.file_name();
         let lint_name = lint_name.to_str().with_context(|| {
             format!(
@@ -53,14 +58,15 @@ fn generate_lints(manifest_dir: &Path) -> Result<()> {
         let lint_var = format!("LINT_{lint_name_upper}_SRC");
         writeln!(
             &mut lints_rs_file,
-            r####"pub static {lint_var}: (&str, &str) = (r###"{lint_name}"###, r###"{lint_src}"###);"####
+            r####"pub static {lint_var}: (&str, &str, &str) = (r###"{lint_name}"###, r###"{lint_src}"###, r###"{}"###);"####,
+            lint_msg.trim_end_matches('\n'),
         )?;
         let () = lint_vars.push(lint_var);
     }
 
     writeln!(
         &mut lints_rs_file,
-        r#"pub static LINTS: [(&str, &str); {}] = ["#,
+        r#"pub static LINTS: [(&str, &str, &str); {}] = ["#,
         lint_vars.len()
     )?;
     for lint_var in lint_vars {

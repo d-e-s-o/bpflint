@@ -55,6 +55,8 @@ pub struct Lint {
     ///
     /// [query]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/
     pub code: String,
+    /// The message reported in a [`LintMatch`][LintMatch::message].
+    pub message: String,
 }
 
 impl AsRef<Lint> for Lint {
@@ -67,9 +69,10 @@ impl AsRef<Lint> for Lint {
 
 /// Retrieve the list of lints shipped with the library.
 pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator {
-    lints::LINTS.iter().map(|(name, code)| Lint {
+    lints::LINTS.iter().map(|(name, code, message)| Lint {
         name: name.to_string(),
         code: code.to_string(),
+        message: message.to_string(),
     })
 }
 
@@ -135,6 +138,7 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
     let Lint {
         name: lint_name,
         code: lint_src,
+        message: lint_msg,
     } = lint;
 
     let query =
@@ -157,19 +161,9 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
                 continue
             }
 
-            let settings = query.property_settings(m.pattern_index);
-            let setting = settings
-                .iter()
-                .find(|prop| &*prop.key == "message")
-                .with_context(|| format!("{lint_name}: failed to find `message` property"))?;
-
             let r#match = LintMatch {
                 lint_name: lint_name.to_string(),
-                message: setting
-                    .value
-                    .as_ref()
-                    .with_context(|| format!("{lint_name}: `message` property has no value set"))?
-                    .to_string(),
+                message: lint_msg.to_string(),
                 range: Range::from(capture.node.range()),
             };
             let () = results.push(r#match);
@@ -241,37 +235,13 @@ mod tests {
             code: indoc! { r#"
                 (call_expression
                     function: (identifier) @function (#eq? @function "foo")
-                    (#set! "message" "foo")
                 )
             "# }
             .to_string(),
+            message: "foo".to_string(),
         }
     }
 
-
-    /// Check that a missing `message` property is being flagged
-    /// appropriately.
-    #[test]
-    fn missing_message_property() {
-        let code = indoc! { r#"
-            test_fn(/* doesn't matter */);
-        "# };
-        let lint = Lint {
-            name: "test_fn".to_string(),
-            code: indoc! { r#"
-                (call_expression
-                    function: (identifier) @function (#eq? @function "test_fn")
-                )
-                "# }
-            .to_string(),
-        };
-        let err = lint_multi(code.as_bytes(), [lint]).unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "test_fn: failed to find `message` property",
-            "{err}"
-        );
-    }
 
     /// Make sure that internal captures (named as "__xxx") are not
     /// reported as matches.
@@ -285,42 +255,35 @@ mod tests {
             code: indoc! { r#"
                 (call_expression
                     function: (identifier) @__function (#eq? @__function "bar")
-                    (#set! "message" "bar")
                 )
             "# }
             .to_string(),
+            message: "a message".to_string(),
         };
         let matches = lint_multi(code.as_bytes(), [lint]).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
     }
 
-    /// Check that `tree-sitter` queries represented by built-in lints
-    /// exhibit the expected set of properties.
+    /// Check that our built-in lints exhibit the expected set of
+    /// properties.
     #[test]
-    fn validate_lint_queries() {
-        for (name, code) in lints::LINTS {
-            let query = Query::new(&LANGUAGE.into(), code).unwrap();
+    fn validate_lints() {
+        for lint in builtin_lints() {
+            let Lint {
+                name,
+                code,
+                message,
+            } = lint;
+            let query = Query::new(&LANGUAGE.into(), &code).unwrap();
             assert_eq!(
                 query.pattern_count(),
                 1,
                 "lint `{name}` has too many pattern matches: only a single one is supported currently"
             );
 
-            let settings = query.property_settings(0);
-            let setting = settings
-                .iter()
-                .find(|prop| &*prop.key == "message")
-                .expect("`message` property is missing for lint `{name}`");
-            let message = setting
-                .value
-                .as_ref()
-                .unwrap_or_else(|| {
-                    panic!("lint `{name}` has no `message` property has no value set")
-                })
-                .as_ref();
             let last = message.chars().last().unwrap();
             assert!(
-                !['.', '!', '?'].contains(&last),
+                !['.', '!', '?', '\n'].contains(&last),
                 "`message` property of lint `{name}` should be concise and not a fully blown sentence with punctuation"
             );
         }
@@ -371,10 +334,10 @@ mod tests {
             code: indoc! { r#"
                 (call_expression
                     function: (identifier) @function (#eq? @function "bar")
-                    (#set! "message" "bar")
                 )
             "# }
             .to_string(),
+            message: "bar".to_string(),
         };
         let matches = lint_multi(code.as_bytes(), [lint_foo(), lint]).unwrap();
         assert_eq!(matches.len(), 2);
