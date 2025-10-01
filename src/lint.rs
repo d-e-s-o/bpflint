@@ -68,7 +68,7 @@ impl AsRef<Lint> for Lint {
 
 
 /// Retrieve the list of lints shipped with the library.
-pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator {
+pub fn builtin_lints() -> impl ExactSizeIterator<Item = Lint> + DoubleEndedIterator + Clone {
     lints::LINTS.iter().map(|(name, code, message)| Lint {
         name: name.to_string(),
         code: code.to_string(),
