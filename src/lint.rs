@@ -176,7 +176,44 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
     Ok(results)
 }
 
-fn lint_custom<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
+
+/// Lint code using the provided set of lints.
+///
+/// Matches are reported in source code order.
+///
+/// - `code` is the source code in question, for example as read from a
+///   file
+/// - `lints` the lints to use for linting the provided source code
+///
+/// # Examples
+/// ```rust
+/// # use bpflint::builtin_lints;
+/// # use bpflint::lint_custom;
+/// # use bpflint::Lint;
+/// let bpf_printk = Lint {
+///     name: "bpf_printk-usage".to_string(),
+///     code: r#"
+///         (call_expression
+///             function: (identifier) @function (#eq? @function "bpf_printk")
+///         )
+///       "#.to_string(),
+///     message: "use bpf_printk only for debugging!".to_string(),
+/// };
+///
+/// let code = br#"
+///     SEC("tp_btf/sched_switch")
+///     int handle__sched_switch(u64 *ctx) {
+///         bpf_printk("context %p\n", ctx);
+///         return 0;
+///     }
+/// "#;
+///
+/// // We want to include the built-in lints as well, not just our
+/// // `bpf_printk` usage flagger.
+/// let matches = lint_custom(code, builtin_lints().chain([bpf_printk])).unwrap();
+/// assert_eq!(matches.len(), 1);
+/// ```
+pub fn lint_custom<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
 where
     I: IntoIterator<Item = L>,
     L: AsRef<Lint> + 'l,
@@ -184,7 +221,7 @@ where
     let mut parser = Parser::new();
     let () = parser
         .set_language(&LANGUAGE.into())
-        .context("failed to load C parser")?;
+        .context("failed to load BPF C language parser")?;
     let tree = parser
         .parse(code, None)
         .context("failed to provided source code")?;
@@ -209,7 +246,7 @@ where
     Ok(results)
 }
 
-/// Lint code using the default set of lints.
+/// Lint code using the default ([built-in][builtin_lints]) set of lints.
 ///
 /// Matches are reported in source code order.
 ///
