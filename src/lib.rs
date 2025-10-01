@@ -60,6 +60,7 @@ pub use crate::lint::Lint;
 pub use crate::lint::LintMatch;
 pub use crate::lint::builtin_lints;
 pub use crate::lint::lint;
+pub use crate::lint::lint_custom;
 pub use crate::report::Opts;
 pub use crate::report::report_terminal;
 pub use crate::report::report_terminal_opts;
