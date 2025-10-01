@@ -176,7 +176,7 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
     Ok(results)
 }
 
-fn lint_multi<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
+fn lint_custom<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
 where
     I: IntoIterator<Item = L>,
     L: AsRef<Lint> + 'l,
@@ -216,7 +216,7 @@ where
 /// - `code` is the source code in question, for example as read from a
 ///   file
 pub fn lint(code: &[u8]) -> Result<Vec<LintMatch>> {
-    lint_multi(code, builtin_lints())
+    lint_custom(code, builtin_lints())
 }
 
 
@@ -260,7 +260,7 @@ mod tests {
             .to_string(),
             message: "a message".to_string(),
         };
-        let matches = lint_multi(code.as_bytes(), [lint]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint]).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
     }
 
@@ -339,7 +339,7 @@ mod tests {
             .to_string(),
             message: "bar".to_string(),
         };
-        let matches = lint_multi(code.as_bytes(), [lint_foo(), lint]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo(), lint]).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
         assert_eq!(matches[1].lint_name, "foo");
@@ -356,7 +356,7 @@ mod tests {
             // bpflint: disable=all
             foo();
         "# };
-        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -371,7 +371,7 @@ mod tests {
                 }
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
         let code = indoc! { r#"
@@ -380,7 +380,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -405,7 +405,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_multi(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
     }
 }
