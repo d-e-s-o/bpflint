@@ -42,6 +42,13 @@ C programs.
        any Linux. E.g.,
        https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.4/bpflinter-x86_64-unknown-linux-musl
 
+#### ❓ **Q: Our BPF code uses custom patterns, is enforcement possible?**
+**A:** Yes! The library allows for definition of custom lints via the
+       `Lint` type. One or more instances of this type can then be
+       provided to the linter.
+       Please refer to the [`custom-lint`](examples/custom-lint.rs)
+       program for a fully working example.
+
 #### ❓ **Q: I got a false-positive, what can I do?**
 **A:** Some lints require context that is not possible or feasible for
        the linter to acquire. E.g., `kprobe` attach point usage may be

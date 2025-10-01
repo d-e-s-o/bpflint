@@ -1,3 +1,7 @@
+/*
+ * This file is a sample BPF C file used to illustrate linting.
+ */
+
 #include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
