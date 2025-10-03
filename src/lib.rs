@@ -58,6 +58,7 @@ pub struct Range {
 
 pub use crate::lint::Lint;
 pub use crate::lint::LintMatch;
+pub use crate::lint::LintRef;
 pub use crate::lint::builtin_lints;
 pub use crate::lint::lint;
 pub use crate::lint::lint_custom;

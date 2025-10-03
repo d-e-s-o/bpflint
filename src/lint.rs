@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::str;
 
 use anyhow::Context as _;
@@ -46,6 +47,21 @@ impl From<tree_sitter::Range> for Range {
 
 
 /// A lint.
+#[derive(Clone, Copy, Debug)]
+pub struct LintRef<'lint> {
+    /// The lint's name.
+    pub name: &'lint str,
+    /// The lints source code in the form of a [tree-sitter
+    /// query][query].
+    ///
+    /// [query]: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/
+    pub code: &'lint str,
+    /// The message reported in a [`LintMatch`][LintMatch::message].
+    pub message: &'lint str,
+}
+
+
+/// A lint.
 #[derive(Clone, Debug)]
 pub struct Lint {
     /// The lint's name.
@@ -57,6 +73,16 @@ pub struct Lint {
     pub code: String,
     /// The message reported in a [`LintMatch`][LintMatch::message].
     pub message: String,
+}
+
+impl Borrow<LintRef<'_>> for Lint {
+    fn borrow(&self) -> &LintRef<'_> {
+        &LintRef {
+            name: &self.name,
+            code: &self.code,
+            message: &self.message,
+        }
+    }
 }
 
 impl AsRef<Lint> for Lint {
