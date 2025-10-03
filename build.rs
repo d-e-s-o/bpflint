@@ -103,7 +103,7 @@ fn deploy_package(manifest_dir: &Path) -> Result<()> {
         .context("failed to read CARGO_PKG_NAME variable")?
         .replace("-", "_");
     // Cargo's OUT_DIR is where it stores build artifacts and so that is
-    // where we can find the create .*wasm we need.
+    // where we can find the created .*wasm we need.
     let out_dir = env::var_os("OUT_DIR").context("failed to read `OUT_DIR` variable")?;
 
     // OUT_DIR is something like
@@ -129,8 +129,7 @@ fn deploy_package(manifest_dir: &Path) -> Result<()> {
         "false" => false,
         _ => {
             return Err(anyhow!(
-                "encountered unexpected value in DEBUG variable: {}",
-                debug
+                "encountered unexpected value in DEBUG variable: {debug}"
             ))
         },
     };
