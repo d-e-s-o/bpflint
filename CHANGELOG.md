@@ -3,6 +3,8 @@ Unreleased
 - Renamed `LintMeta` to `Lint` and made it exhaustive and user
   constructible
   - Added `message` member to it
+- Fixed potential panic of `report_terminal` for matches spanning into
+  the empty last line of a file
 
 
 0.1.3
