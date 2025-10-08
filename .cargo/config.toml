@@ -1,0 +1,5 @@
+[alias]
+deploy = "build --features=deploy,debug --release --target=wasm32-unknown-unknown"
+d = "deploy"
+serve = "run -p serve www/"
+s = "serve"
