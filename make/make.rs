@@ -1,11 +1,16 @@
-use std::env::args_os;
+use std::env::args;
 use std::env::current_exe;
 use std::fs::File;
+use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Result;
+use std::io::Write as _;
+use std::io::stderr;
 use std::net::TcpListener;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
+use std::process::ExitCode;
 
 use tiny_http::Header;
 use tiny_http::Response;
@@ -88,25 +93,67 @@ fn serve(root: PathBuf) -> Result<()> {
     }
 }
 
-fn main() -> Result<()> {
-    match args_os().len() {
-        2 if !args_os().any(|arg| &arg == "--help" || &arg == "-h") => {
-            let mut args = args_os();
-            let _prog = args.next().unwrap();
-            let root = args.next().unwrap();
+fn usage() -> ExitCode {
+    print!(
+        "Usage: {name} <COMMAND>
+
+Commands:
+  exec <command..>  Execute one or more commands
+  serve <root-dir>  Serve contents of a directory
+
+Options:
+  -h, --help  Print help
+",
+        name = current_exe().unwrap().display(),
+    );
+    ExitCode::FAILURE
+}
+
+fn main() -> ExitCode {
+    if args().any(|arg| &arg == "--help" || &arg == "-h") {
+        return usage()
+    }
+    let mut args = args().skip(1);
+    let Some(op) = args.next() else {
+        return usage()
+    };
+
+    let result = match op.as_ref() {
+        "exec" => {
+            let cmd = args.next().unwrap_or_default();
+            let cmd = args.fold(cmd, |mut cmd, arg| {
+                cmd += " ";
+                cmd += &arg.to_string();
+                cmd
+            });
+            Command::new("sh")
+                .arg("-c")
+                .arg(&cmd)
+                .status()
+                .map_err(|err| Error::other(format!("failed to run `{cmd}`: {err}")))
+                .and_then(|status| {
+                    if !status.success() {
+                        Err(Error::other(format!(
+                            "command `{cmd}` failed with status {status}"
+                        )))
+                    } else {
+                        Ok(())
+                    }
+                })
+        },
+        "serve" => {
+            let Some(root) = args.next() else {
+                return usage()
+            };
             serve(PathBuf::from(root))
         },
-        _ => {
-            print!(
-                "USAGE:
-  {name} [OPTIONS] <http-root-dir>
+        _ => return usage(),
+    };
 
-OPTIONS:
-  -h, --help       Print help information
-",
-                name = current_exe().unwrap().display(),
-            );
-            Ok(())
-        },
+    if let Err(err) = result {
+        let _result = writeln!(stderr(), "{err}");
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
     }
 }
