@@ -1,14 +1,13 @@
 [package]
-name = "serve"
+name = "make"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 publish = false
 
 [[bin]]
-name = "serve"
-path = "main.rs"
+name = "make"
+path = "make.rs"
 
 [dependencies]
-anyhow = "1.0"
-tiny_http = "0.12"
+tiny_http = { version = "0.12", default-features = false }
