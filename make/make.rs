@@ -25,6 +25,7 @@ fn content_type(path: &Path) -> &'static str {
     };
 
     match extension.to_str().unwrap() {
+        "css" => "text/css",
         "gif" => "image/gif",
         "htm" => "text/html; charset=utf8",
         "html" => "text/html; charset=utf8",
@@ -53,8 +54,11 @@ fn serve(root: PathBuf) -> Result<()> {
         }
     };
 
-    println!("Serving on {}", listener.local_addr().unwrap());
+    let addr = listener
+        .local_addr()
+        .expect("failed to retrieve local socket address");
     let server = Server::from_listener(listener, None).expect("failed to create HTTP server");
+    println!("Serving on http://{addr}");
 
     loop {
         let req = match server.recv() {
