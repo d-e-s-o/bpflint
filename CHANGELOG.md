@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.2.0
+-----
 - Renamed `LintMeta` to `Lint` and made it exhaustive and user
   constructible
   - Added `message` member to it

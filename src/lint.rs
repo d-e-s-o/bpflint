@@ -45,7 +45,7 @@ impl From<tree_sitter::Range> for Range {
 }
 
 
-/// A lint.
+/// The representation of a lint.
 #[derive(Clone, Debug)]
 pub struct Lint {
     /// The lint's name.
