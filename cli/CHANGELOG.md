@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.1.4
+-----
 - Updated `bpflint` dependency to `0.2.0`
 
 
