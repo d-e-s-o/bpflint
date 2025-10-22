@@ -1,0 +1,1 @@
+Consider using a ringbuf over perfbuf as it is generally considered the superior data exchange primitive (refer to https://nakryiko.com/posts/bpf-ringbuf/ for details and exceptions)
