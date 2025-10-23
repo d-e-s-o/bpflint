@@ -1,3 +1,8 @@
+Unreleased
+----------
+- Decreased size of logo used in README
+
+
 0.2.0
 -----
 - Renamed `LintMeta` to `Lint` and made it exhaustive and user
