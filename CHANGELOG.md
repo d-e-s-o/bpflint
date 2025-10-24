@@ -1,5 +1,6 @@
 Unreleased
 ----------
+- Added `perfbuf-usage` lint
 - Decreased size of logo used in README
 
 
