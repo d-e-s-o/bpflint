@@ -11,8 +11,8 @@ use crate::util::lint_report;
 fn perfbuf_usage() {
     let code = indoc! { r#"
         struct {
-          int a;
-          __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+            int a;
+            __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
         } name;
     "# };
 
