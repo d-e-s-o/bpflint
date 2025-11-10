@@ -11,6 +11,8 @@ mod core_read;
 mod get_current_task;
 #[path = "perfbuf-usage.rs"]
 mod perfbuf_usage;
+#[path = "pragma-unroll-for-loop-bounded.rs"]
+mod pragma_unroll_for_loop_bounded;
 #[path = "probe-read.rs"]
 mod probe_read;
 #[path = "unstable-attach-point.rs"]
