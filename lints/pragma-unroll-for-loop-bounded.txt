@@ -1,0 +1,1 @@
+Consider using bpf_for instead as it is generally considered the superior loop primitive (refer to https://docs.ebpf.io/linux/concepts/loops/ for details and exceptions)
