@@ -1,4 +1,4 @@
-//! Tests for the `pragma-unroll` lint.
+//! Tests for the `pragma-unroll-for-loop-bounded` lint.
 
 use indoc::indoc;
 
