@@ -74,6 +74,9 @@ pub struct Args {
     /// Number of lines to show before and after the lint match.
     #[arg(short = 'C', long = "context", value_parser = parse_context_line_count, conflicts_with_all = ["before", "after"])]
     pub context: Option<u8>,
+    /// Print in color
+    #[arg(long = "color", default_value_t = false)]
+    pub color: bool,
     /// Print a list of available lints.
     #[arg(long, exclusive = true)]
     pub print_lints: bool,
@@ -85,7 +88,10 @@ pub struct Args {
 impl Args {
     /// Calculate the effective context configuration.
     pub fn additional_options(&self) -> bpflint::Opts {
-        let mut opts = bpflint::Opts::default();
+        let mut opts = bpflint::Opts {
+            color: self.color,
+            ..Default::default()
+        };
         if let Some(before) = self.before.or(self.context) {
             opts.extra_lines.0 = before;
         }

@@ -16,7 +16,9 @@ where
     let () = lint(code.as_ref())
         .unwrap()
         .into_iter()
-        .try_for_each(|m| report_terminal(&m, code.as_ref(), Path::new("<stdin>"), &mut report))
+        .try_for_each(|m| {
+            report_terminal(&m, code.as_ref(), Path::new("<stdin>"), false, &mut report)
+        })
         .unwrap();
     let report = String::from_utf8(report).unwrap();
     report

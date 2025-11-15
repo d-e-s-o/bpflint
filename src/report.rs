@@ -1,11 +1,11 @@
+use anyhow::Result;
 use std::io;
+use std::io::Error;
 use std::path::Path;
 
-use anyhow::Result;
-
 use crate::LintMatch;
+use crate::highlight::create_highlighter;
 use crate::lines::Lines;
-
 
 /// Configuration options for terminal reporting.
 #[derive(Default, Clone, Debug)]
@@ -15,6 +15,8 @@ pub struct Opts {
     /// The struct is non-exhaustive and open to extension.
     #[doc(hidden)]
     pub _non_exhaustive: (),
+    /// Whether to colorize the output in 24bit.
+    pub color: bool,
 }
 
 
@@ -42,9 +44,19 @@ pub fn report_terminal(
     r#match: &LintMatch,
     code: &[u8],
     path: &Path,
+    color: bool,
     writer: &mut dyn io::Write,
 ) -> Result<()> {
-    report_terminal_opts(r#match, code, path, &Opts::default(), writer)
+    report_terminal_opts(
+        r#match,
+        code,
+        path,
+        &Opts {
+            color,
+            ..Default::default()
+        },
+        writer,
+    )
 }
 
 /// Report a lint match in terminal style with extra lines for context as configured.
@@ -85,6 +97,8 @@ pub fn report_terminal_opts(
         range,
     } = r#match;
 
+    let highlighter = create_highlighter(opts.color)?;
+
     writeln!(writer, "warning: [{lint_name}] {message}")?;
     let start_row = range.start_point.row;
     let end_row = range.end_point.row;
@@ -121,7 +135,8 @@ pub fn report_terminal_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
-            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
+            writeln!(writer, "{row:width$} | {highlighted}")
         })?;
 
     // SANITY: It would be a tree-sitter bug the range does not
@@ -133,7 +148,8 @@ pub fn report_terminal_opts(
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
-        writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
+        let highlighted = highlighter.highlight(line)?;
+        writeln!(writer, "{lprefix}{highlighted}")?;
         writeln!(
             writer,
             "{prefix}{:indent$}{:^<width$}",
@@ -151,7 +167,8 @@ pub fn report_terminal_opts(
             // report it. If that's the case just ignore this empty
             // line.
             let Some(line) = lines.next() else { break };
-            writeln!(writer, "{lprefix} {c} {}", String::from_utf8_lossy(line))?;
+            let highlighted = highlighter.highlight(line)?;
+            writeln!(writer, "{lprefix} {c} {highlighted}")?;
         }
         writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
     }
@@ -161,7 +178,8 @@ pub fn report_terminal_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
-            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
+            writeln!(writer, "{row:width$} | {highlighted}")
         })?;
 
     writeln!(writer, "{prefix}")?;
@@ -198,8 +216,14 @@ mod tests {
             },
         };
         let mut report = Vec::new();
-        let () =
-            report_terminal(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("./no_bytes.c"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
             warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
@@ -232,7 +256,14 @@ mod tests {
             },
         };
         let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -278,7 +309,14 @@ mod tests {
             },
         };
         let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -315,7 +353,14 @@ mod tests {
         };
 
         let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
 
         // Note that ideally we'd fine a way to just highlight the
@@ -356,7 +401,14 @@ mod tests {
             },
         };
         let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -390,7 +442,14 @@ mod tests {
             },
         };
         let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report,
+        )
+        .unwrap();
         let report = String::from_utf8(report).unwrap();
         let expected = indoc! { r#"
             warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
@@ -431,8 +490,14 @@ mod tests {
         let mut report_old = Vec::new();
         let mut report_new = Vec::new();
 
-        let () =
-            report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report_old).unwrap();
+        let () = report_terminal(
+            &m,
+            code.as_bytes(),
+            Path::new("<stdin>"),
+            false,
+            &mut report_old,
+        )
+        .unwrap();
         let () = report_terminal_opts(
             &m,
             code.as_bytes(),

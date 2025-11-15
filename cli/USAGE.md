@@ -19,6 +19,9 @@ Options:
   -C, --context <CONTEXT>
           Number of lines to show before and after the lint match
 
+      --color
+          Print in color
+
       --print-lints
           Print a list of available lints
 
