@@ -55,6 +55,10 @@ fn parse_context_line_count(s: &str) -> Result<u8> {
     Ok(line_count)
 }
 
+fn parse_kernel_version(s: &str) -> Result<(u8, u8, u8)> {
+    bpflint::parse_kernel_version(s)
+}
+
 /// A command line interface for bpflint.
 #[derive(Debug, Parser)]
 #[command(version = env!("VERSION"))]
@@ -80,6 +84,9 @@ pub struct Args {
     /// Increase verbosity (can be supplied multiple times).
     #[arg(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
     pub verbosity: u8,
+    /// User kernel version to check lints against
+    #[arg(short = 'k', long = "kernel_version", value_parser = parse_kernel_version)]
+    pub kernel_version: Option<(u8, u8, u8)>,
 }
 
 impl Args {

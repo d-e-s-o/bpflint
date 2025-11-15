@@ -31,8 +31,11 @@ mod redefine;
 mod lines;
 mod lint;
 mod report;
+mod utils;
 
 use std::ops;
+
+pub use utils::parse_kernel_version;
 
 
 /// A position in a multi-line text document, in terms of rows and columns.

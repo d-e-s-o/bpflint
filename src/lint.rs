@@ -134,7 +134,7 @@ fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
 }
 
 
-fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
+fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint, user_kernel_version: Option<(u8, u8, u8)>) -> Result<Vec<LintMatch>> {
     let Lint {
         name: lint_name,
         code: lint_src,
@@ -150,6 +150,24 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
         for capture in m.captures {
             if is_lint_disabled(lint_name, capture.node, code) {
                 continue;
+            }
+
+            let settings = query.property_settings(m.pattern_index);
+            let min_kernel_version = settings
+                    .iter()
+                    .find(|prop| prop.key.as_ref() == "min_kernel_version")
+                    .and_then(|prop| prop.value.as_deref());
+
+            // Checks for both if user passed in kernel version and if lint specifies one
+            // If we don't have either or both, we'll simply run the linter as normal
+            // If we do have both then we'll skip any lints where the user's version is less than the 
+            // lint's minimum version specified in the .scm file
+            if let (Some(user_version), Some(min_kernel_version)) = (user_kernel_version, min_kernel_version) {
+                if let Ok(min_version) = crate::parse_kernel_version(min_kernel_version) {
+                    if user_version < min_version {
+                        continue;
+                    }
+                }
             }
 
             // SANITY: It would be a tree-sitter bug if the capture
@@ -210,10 +228,10 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
 ///
 /// // We want to include the built-in lints as well, not just our
 /// // `bpf_printk` usage flagger.
-/// let matches = lint_custom(code, builtin_lints().chain([bpf_printk])).unwrap();
+/// let matches = lint_custom(code, builtin_lints().chain([bpf_printk]), None).unwrap();
 /// assert_eq!(matches.len(), 1);
 /// ```
-pub fn lint_custom<'l, I, L>(code: &[u8], lints: I) -> Result<Vec<LintMatch>>
+pub fn lint_custom<'l, I, L>(code: &[u8], lints: I, user_kernel_version: Option<(u8, u8, u8)>) -> Result<Vec<LintMatch>>
 where
     I: IntoIterator<Item = L>,
     L: AsRef<Lint> + 'l,
@@ -227,7 +245,7 @@ where
         .context("failed to provided source code")?;
     let mut results = Vec::new();
     for lint in lints {
-        let matches = lint_impl(&tree, code, lint.as_ref())?;
+        let matches = lint_impl(&tree, code, lint.as_ref(), user_kernel_version)?;
         let () = results.extend(matches);
     }
 
@@ -252,8 +270,8 @@ where
 ///
 /// - `code` is the source code in question, for example as read from a
 ///   file
-pub fn lint(code: &[u8]) -> Result<Vec<LintMatch>> {
-    lint_custom(code, builtin_lints())
+pub fn lint(code: &[u8], user_kernel_version: Option<(u8, u8, u8)>) -> Result<Vec<LintMatch>> {
+    lint_custom(code, builtin_lints(), user_kernel_version)
 }
 
 
@@ -262,7 +280,7 @@ mod tests {
     use super::*;
 
     use indoc::indoc;
-
+    
     use crate::Point;
 
 
@@ -297,7 +315,7 @@ mod tests {
             .to_string(),
             message: "a message".to_string(),
         };
-        let matches = lint_custom(code.as_bytes(), [lint]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint], None).unwrap();
         assert!(matches.is_empty(), "{matches:?}");
     }
 
@@ -341,7 +359,7 @@ mod tests {
             }
         "# };
 
-        let matches = lint(code.as_bytes()).unwrap();
+        let matches = lint(code.as_bytes(), None).unwrap();
         assert_eq!(matches.len(), 1);
 
         let LintMatch {
@@ -376,7 +394,7 @@ mod tests {
             .to_string(),
             message: "bar".to_string(),
         };
-        let matches = lint_custom(code.as_bytes(), [lint_foo(), lint]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo(), lint], None).unwrap();
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0].lint_name, "bar");
         assert_eq!(matches[1].lint_name, "foo");
@@ -393,7 +411,7 @@ mod tests {
             // bpflint: disable=all
             foo();
         "# };
-        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()], None).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -408,7 +426,7 @@ mod tests {
                 }
             }
         "# };
-        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()], None).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
 
         let code = indoc! { r#"
@@ -417,7 +435,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()], None).unwrap();
         assert_eq!(matches.len(), 0, "{matches:?}");
     }
 
@@ -442,7 +460,7 @@ mod tests {
                 foo();
             }
         "# };
-        let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
+        let matches = lint_custom(code.as_bytes(), [lint_foo()], None).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
     }
 }

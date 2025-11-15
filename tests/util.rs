@@ -8,12 +8,12 @@ use bpflint::report_terminal;
 
 /// Lint `code` and report matches as a string created using
 /// [`report_terminal`].
-pub fn lint_report<C>(code: C) -> String
+pub fn lint_report<C>(code: C, user_kernel_version: Option<(u8, u8, u8)>) -> String
 where
     C: AsRef<[u8]>,
 {
     let mut report = Vec::new();
-    let () = lint(code.as_ref())
+    let () = lint(code.as_ref(), user_kernel_version)
         .unwrap()
         .into_iter()
         .try_for_each(|m| report_terminal(&m, code.as_ref(), Path::new("<stdin>"), &mut report))

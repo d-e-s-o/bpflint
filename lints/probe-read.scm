@@ -5,4 +5,5 @@
                   (expression)
                   (expression)
                )
+    (#set! "min_kernel_version" "5.5.0")
 )
