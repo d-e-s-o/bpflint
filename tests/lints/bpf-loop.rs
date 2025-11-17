@@ -35,5 +35,5 @@ fn basic_for_bounded() {
            |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
            | 
     "# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }

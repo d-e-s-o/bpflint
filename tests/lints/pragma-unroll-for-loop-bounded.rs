@@ -32,7 +32,7 @@ fn basic_for_bounded() {
           |  |^
           | 
     "# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn basic_for_unbounded() {
 
     // No match
     let expected = indoc! { r#""# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
 
 #[test]
@@ -76,7 +76,7 @@ fn basic_while_bounded() {
 
     // Nothing matches
     let expected = indoc! { r#""# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
 
 #[test]
@@ -98,5 +98,5 @@ fn basic_while_unbounded() {
 
     // Nothing matches
     let expected = indoc! { r#""# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
