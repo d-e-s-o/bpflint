@@ -4,6 +4,7 @@ use indoc::indoc;
 
 use pretty_assertions::assert_eq;
 
+use bpflint::parse_kernel_version;
 use crate::util::lint_report;
 
 
@@ -32,7 +33,7 @@ fn basic() {
           |                                ^^^^^^^^^^^^^^^^^^^^
           | 
     "# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
 
 
@@ -51,7 +52,7 @@ fn whitespace_call() {
           | ^^^^^^^^^^^^^^^^^^^^
           | 
     "# };
-    assert_eq!(lint_report(code), expected);
+    assert_eq!(lint_report(code, None), expected);
 }
 
 
@@ -62,11 +63,64 @@ fn no_match_different_signature() {
     let code = indoc! { r#"
         task = (struct task_struct *)bpf_get_current_task("foobar");
     "# };
-    assert_eq!(lint_report(code), "");
+    assert_eq!(lint_report(code, None), "");
 
     // TODO: This construct should actually be accepted. Sigh.
     let code = indoc! { r#"
         task = (struct task_struct *)bpf_get_current_task(/* WRONG */);
     "# };
-    assert_eq!(lint_report(code), "");
+    assert_eq!(lint_report(code, None), "");
+}
+
+// Test where the user kernel is greater than or equal to user specified kernel
+#[test]
+fn run_kernel_in_scope() {
+    let code = indoc! { r#"
+        SEC("tp_btf/irq_handler_entry")
+        int on_irq_handler_entry(u64 *cxt)
+        {
+          struct task_struct *task;
+
+          task = (struct task_struct *)bpf_get_current_task();
+          if (!task)
+            return 0;
+
+          return 1;
+        }
+    "# };
+
+    let expected = indoc! { r#"
+        warning: [get-current-task] bpf_get_current_task() is difficult to use; consider using the stricter typed bpf_get_current_task_btf() instead; refer to bpf-helpers(7)
+          --> <stdin>:5:31
+          | 
+        5 |   task = (struct task_struct *)bpf_get_current_task();
+          |                                ^^^^^^^^^^^^^^^^^^^^
+          | 
+    "# };
+
+    let user_kernel_version = Some(parse_kernel_version("5.11.0").unwrap());
+
+    assert_eq!(lint_report(code, user_kernel_version), expected);
+}
+
+// Test where the user kernel is less than lint kernel version
+#[test]
+fn no_run_kernel_out_of_scope() {
+    let code = indoc! { r#"
+        SEC("tp_btf/irq_handler_entry")
+        int on_irq_handler_entry(u64 *cxt)
+        {
+          struct task_struct *task;
+
+          task = (struct task_struct *)bpf_get_current_task();
+          if (!task)
+            return 0;
+
+          return 1;
+        }
+    "# };
+
+    let user_kernel_version = Some(parse_kernel_version("5.2.0").unwrap());
+
+    assert_eq!(lint_report(code, user_kernel_version), "");
 }

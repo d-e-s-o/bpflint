@@ -135,7 +135,7 @@ fn main_impl() -> Result<(), ExitError> {
             let mut first = true;
             let match_ext = has_bpf_c_ext(src_path).not().then_some(&m_ext_is_c);
             let matches =
-                lint(&code).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
+                lint(&code, args.kernel_version).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
             for m in match_ext.into_iter().chain(matches.iter()) {
                 if !first {
                     writeln!(&mut stdout)?;
