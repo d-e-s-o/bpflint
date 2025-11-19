@@ -52,7 +52,7 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false, optional
 [dependencies]
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-tree-sitter-bpf-c = "0.2.2"
+tree-sitter-bpf-c = "0.2.3"
 
 [dev-dependencies]
 bpflint = { path = ".", features = ["debug"] }
