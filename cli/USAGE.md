@@ -19,8 +19,10 @@ Options:
   -C, --context <CONTEXT>
           Number of lines to show before and after the lint match
 
-      --color
-          Color output and use syntax highlighting for code snippets
+      --color <COLOR>
+          Whether or not to color output and or syntax highlighting for code snippets
+          
+          [possible values: true, false]
 
       --print-lints
           Print a list of available lints

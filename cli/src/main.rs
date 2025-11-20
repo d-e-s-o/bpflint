@@ -8,6 +8,7 @@ use std::fmt::Formatter;
 use std::fmt::Result as FmtResult;
 use std::fs::read;
 use std::io;
+use std::io::IsTerminal as _;
 use std::io::Write as _;
 use std::io::stderr;
 use std::ops::Not as _;
@@ -86,7 +87,7 @@ fn main_impl() -> Result<(), ExitError> {
     } = args;
 
     let mut opts = terminal::Opts {
-        color,
+        color: color.unwrap_or_else(|| io::stdin().is_terminal()),
         ..Default::default()
     };
     if let Some(before) = before.or(context) {
