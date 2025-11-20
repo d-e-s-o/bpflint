@@ -1,6 +1,7 @@
 Unreleased
 ----------
 - Added `perfbuf-usage` lint
+- Added `unrolled-for-loop` lint
 - Decreased size of logo used in README
 
 
