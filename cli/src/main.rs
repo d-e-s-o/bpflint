@@ -77,12 +77,24 @@ fn main_impl() -> Result<(), ExitError> {
     let args = args::Args::parse();
     let args::Args {
         srcs,
+        before,
+        after,
+        context,
+        color,
         print_lints,
         verbosity,
-        ..
-    } = &args;
+    } = args;
 
-    let additional_opts = args.additional_options();
+    let mut opts = terminal::Opts {
+        color,
+        ..Default::default()
+    };
+    if let Some(before) = before.or(context) {
+        opts.extra_lines.0 = before;
+    }
+    if let Some(after) = after.or(context) {
+        opts.extra_lines.1 = after;
+    }
 
     let level = match verbosity {
         0 => Level::WARN,
@@ -121,7 +133,7 @@ fn main_impl() -> Result<(), ExitError> {
         },
     };
 
-    if *print_lints {
+    if print_lints {
         for lint in builtin_lints() {
             writeln!(&mut stdout, "{}", lint.name)?;
         }
@@ -143,7 +155,7 @@ fn main_impl() -> Result<(), ExitError> {
                     first = false;
                 }
 
-                let () = terminal::report_opts(m, &code, src_path, &additional_opts, &mut stdout)?;
+                let () = terminal::report_opts(m, &code, src_path, &opts, &mut stdout)?;
                 if result.is_ok() {
                     result = Err(ExitError::ExitCode(ExitCode::FAILURE));
                 }

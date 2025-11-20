@@ -9,8 +9,6 @@ use anyhow::Result;
 use clap::ArgAction;
 use clap::Parser;
 
-use bpflint::terminal;
-
 
 fn parse_files(s: &str) -> Result<Vec<PathBuf>> {
     if let Some(rest) = s.strip_prefix('@') {
@@ -87,23 +85,6 @@ pub struct Args {
     pub verbosity: u8,
 }
 
-impl Args {
-    /// Calculate the effective context configuration.
-    pub fn additional_options(&self) -> terminal::Opts {
-        let mut opts = terminal::Opts {
-            color: self.color,
-            ..Default::default()
-        };
-        if let Some(before) = self.before.or(self.context) {
-            opts.extra_lines.0 = before;
-        }
-        if let Some(after) = self.after.or(self.context) {
-            opts.extra_lines.1 = after;
-        }
-        opts
-    }
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -164,25 +145,6 @@ mod tests {
                 vec![PathBuf::from("1st"), PathBuf::from("2nd")]
             ]
         );
-    }
-
-    /// Test context argument parsing and effective values.
-    #[test]
-    fn context_argument_parsing() {
-        // Default values
-        let args = try_parse(["test.c"]).unwrap();
-        let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, (0, 0));
-
-        // -B 3 -A 4 (can be combined)
-        let args = try_parse(["test.c", "-B", "3", "-A", "4"]).unwrap();
-        let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, (3, 4));
-
-        // -C 4 (sets both before and after to 4)
-        let args = try_parse(["test.c", "-C", "4"]).unwrap();
-        let opts = args.additional_options();
-        assert_eq!(opts.extra_lines, (4, 4));
     }
 
     /// Test that -C cannot be combined with -A or -B using clap groups.
