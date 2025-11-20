@@ -32,7 +32,7 @@ use bpflint::Point;
 use bpflint::Range;
 use bpflint::builtin_lints;
 use bpflint::lint;
-use bpflint::report_terminal_opts;
+use bpflint::terminal;
 
 
 fn has_bpf_c_ext(path: &Path) -> bool {
@@ -143,7 +143,7 @@ fn main_impl() -> Result<(), ExitError> {
                     first = false;
                 }
 
-                let () = report_terminal_opts(m, &code, src_path, &additional_opts, &mut stdout)?;
+                let () = terminal::report_opts(m, &code, src_path, &additional_opts, &mut stdout)?;
                 if result.is_ok() {
                     result = Err(ExitError::ExitCode(ExitCode::FAILURE));
                 }
