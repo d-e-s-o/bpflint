@@ -9,6 +9,8 @@ use anyhow::Result;
 use clap::ArgAction;
 use clap::Parser;
 
+use bpflint::terminal;
+
 
 fn parse_files(s: &str) -> Result<Vec<PathBuf>> {
     if let Some(rest) = s.strip_prefix('@') {
@@ -87,8 +89,8 @@ pub struct Args {
 
 impl Args {
     /// Calculate the effective context configuration.
-    pub fn additional_options(&self) -> bpflint::Opts {
-        let mut opts = bpflint::Opts {
+    pub fn additional_options(&self) -> terminal::Opts {
+        let mut opts = terminal::Opts {
             color: self.color,
             ..Default::default()
         };

@@ -28,7 +28,6 @@
 #[macro_use]
 mod redefine;
 
-mod highlight;
 mod lines;
 mod lint;
 mod report;
@@ -62,9 +61,7 @@ pub use crate::lint::LintMatch;
 pub use crate::lint::builtin_lints;
 pub use crate::lint::lint;
 pub use crate::lint::lint_custom;
-pub use crate::report::Opts;
-pub use crate::report::report_terminal;
-pub use crate::report::report_terminal_opts;
+pub use crate::report::terminal;
 
 
 #[cfg(target_arch = "wasm32")]
@@ -90,7 +87,7 @@ mod wasm {
     #[wasm_bindgen]
     pub fn lint_html(code: Vec<u8>, path: String, context: u8) -> Result<String, String> {
         fn lint_impl(code: Vec<u8>, path: PathBuf, context: u8) -> Result<String, Error> {
-            let opts = Opts {
+            let opts = terminal::Opts {
                 extra_lines: (context, context),
                 ..Default::default()
             };
@@ -104,7 +101,7 @@ mod wasm {
                     first = false;
                 }
 
-                let () = report_terminal_opts(&m, &code, &path, &opts, &mut report)?;
+                let () = terminal::report_opts(&m, &code, &path, &opts, &mut report)?;
             }
             let report =
                 String::from_utf8(report).context("generated report contains invalid UTF-8")?;

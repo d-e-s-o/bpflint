@@ -2,6 +2,8 @@ Unreleased
 ----------
 - Added `perfbuf-usage` lint
 - Added `unrolled-for-loop` lint
+- Introduced public `terminal` module with terminal related reporting
+  functionality
 - Decreased size of logo used in README
 
 

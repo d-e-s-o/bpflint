@@ -1,3 +1,5 @@
+//! Functionality for reporting lint matches on a terminal.
+
 use std::io;
 use std::io::Error;
 use std::path::Path;
@@ -5,8 +7,9 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::LintMatch;
-use crate::highlight::create_highlighter;
 use crate::lines::Lines;
+
+use super::highlight::create_highlighter;
 
 
 /// Configuration options for terminal reporting.
@@ -42,13 +45,13 @@ pub struct Opts {
 ///    |                         ^^^^^^^^^^^^^^
 ///    |
 /// ```
-pub fn report_terminal(
+pub fn report(
     r#match: &LintMatch,
     code: &[u8],
     path: &Path,
     writer: &mut dyn io::Write,
 ) -> Result<()> {
-    report_terminal_opts(r#match, code, path, &Opts::default(), writer)
+    report_opts(r#match, code, path, &Opts::default(), writer)
 }
 
 /// Report a lint match in terminal style with extra lines for context as configured.
@@ -76,7 +79,7 @@ pub fn report_terminal(
 /// 45 | }
 ///    |
 /// ```
-pub fn report_terminal_opts(
+pub fn report_opts(
     r#match: &LintMatch,
     code: &[u8],
     path: &Path,
@@ -207,15 +210,14 @@ mod tests {
                 end_point: Point::default(),
             },
         };
-        let mut report = Vec::new();
-        let () =
-            report_terminal(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
               --> ./no_bytes.c:0:0
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Make sure that multi-line matches are reported correctly.
@@ -241,9 +243,9 @@ mod tests {
                 end_point: Point { row: 5, col: 17 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
               --> <stdin>:2:4
@@ -255,7 +257,7 @@ mod tests {
               |  |_________________^
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Make sure that multi-line matches that are straddling a power of
@@ -287,9 +289,9 @@ mod tests {
                 end_point: Point { row: 10, col: 17 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
               --> <stdin>:7:4
@@ -301,7 +303,7 @@ mod tests {
                |  |_________________^
                | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Check that we "correctly" report matches effectively spanning
@@ -324,9 +326,9 @@ mod tests {
             },
         };
 
-        let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
 
         // Note that ideally we'd fine a way to just highlight the
         // entire line instead of using the multi-line reporting path
@@ -339,7 +341,7 @@ mod tests {
               |  |^
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Check that our "terminal" reporting works as expected.
@@ -365,9 +367,9 @@ mod tests {
                 end_point: Point { row: 6, col: 18 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
               --> <stdin>:6:4
@@ -376,7 +378,7 @@ mod tests {
               |     ^^^^^^^^^^^^^^
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Check that reporting works properly when the match is on the
@@ -399,9 +401,9 @@ mod tests {
                 end_point: Point { row: 0, col: 17 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report).unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let mut r = Vec::new();
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
               --> <stdin>:0:4
@@ -410,11 +412,11 @@ mod tests {
               |     ^^^^^^^^^^^^^
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
-    /// Test that `report_terminal_opts` with `Opts::default()` behaves
-    /// identically to `report_terminal`.
+    /// Test that `report_opts` with `Opts::default()` behaves
+    /// identically to `report`.
     #[test]
     fn report_terminal_opts_none_context() {
         let code = indoc! { r#"
@@ -441,9 +443,8 @@ mod tests {
         let mut report_old = Vec::new();
         let mut report_new = Vec::new();
 
-        let () =
-            report_terminal(&m, code.as_bytes(), Path::new("<stdin>"), &mut report_old).unwrap();
-        let () = report_terminal_opts(
+        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut report_old).unwrap();
+        let () = report_opts(
             &m,
             code.as_bytes(),
             Path::new("<stdin>"),
@@ -478,8 +479,8 @@ mod tests {
                 end_point: Point { row: 5, col: 18 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal_opts(
+        let mut r = Vec::new();
+        let () = report_opts(
             &m,
             code.as_bytes(),
             Path::new("<stdin>"),
@@ -487,10 +488,10 @@ mod tests {
                 extra_lines: (2, 1),
                 ..Default::default()
             },
-            &mut report,
+            &mut r,
         )
         .unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let r = String::from_utf8(r).unwrap();
 
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -503,7 +504,7 @@ mod tests {
             6 |     return 0;
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Test context lines with multi-line matches.
@@ -529,8 +530,8 @@ mod tests {
                 end_point: Point { row: 5, col: 17 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal_opts(
+        let mut r = Vec::new();
+        let () = report_opts(
             &m,
             code.as_bytes(),
             Path::new("<stdin>"),
@@ -538,10 +539,10 @@ mod tests {
                 extra_lines: (1, 1),
                 ..Default::default()
             },
-            &mut report,
+            &mut r,
         )
         .unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let r = String::from_utf8(r).unwrap();
 
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -556,7 +557,7 @@ mod tests {
             6 |     return 0;
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Test context lines when there aren't enough lines before the error.
@@ -578,8 +579,8 @@ mod tests {
                 end_point: Point { row: 0, col: 17 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal_opts(
+        let mut r = Vec::new();
+        let () = report_opts(
             &m,
             code.as_bytes(),
             Path::new("<stdin>"),
@@ -587,10 +588,10 @@ mod tests {
                 extra_lines: (5, 2),
                 ..Default::default()
             },
-            &mut report,
+            &mut r,
         )
         .unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let r = String::from_utf8(r).unwrap();
 
         let expected = indoc! { r#"
             warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
@@ -602,7 +603,7 @@ mod tests {
             2 | {
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 
     /// Test context lines when there aren't enough lines after the error.
@@ -625,8 +626,8 @@ mod tests {
                 end_point: Point { row: 3, col: 18 },
             },
         };
-        let mut report = Vec::new();
-        let () = report_terminal_opts(
+        let mut r = Vec::new();
+        let () = report_opts(
             &m,
             code.as_bytes(),
             Path::new("<stdin>"),
@@ -634,10 +635,10 @@ mod tests {
                 extra_lines: (1, 5),
                 ..Default::default()
             },
-            &mut report,
+            &mut r,
         )
         .unwrap();
-        let report = String::from_utf8(report).unwrap();
+        let r = String::from_utf8(r).unwrap();
 
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -649,6 +650,6 @@ mod tests {
             4 | }
               | 
         "# };
-        assert_eq!(report, expected);
+        assert_eq!(r, expected);
     }
 }
