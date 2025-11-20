@@ -29,7 +29,7 @@ mod imp {
     }
 
     impl TreeSitterHighlighter {
-        pub fn new() -> Result<Self> {
+        fn new() -> Result<Self> {
             let mut highlight_config = tree_sitter_highlight::HighlightConfiguration::new(
                 LANGUAGE.into(),
                 "bpf-c",
@@ -69,7 +69,7 @@ mod imp {
         }
     }
 
-    pub fn create_highlighter(color: bool) -> Result<Box<dyn Highlighter>> {
+    pub(crate) fn create_highlighter(color: bool) -> Result<Box<dyn Highlighter>> {
         if !color {
             return Ok(Box::new(NopHighlighter));
         }
@@ -80,15 +80,15 @@ mod imp {
     /// Represents a 24-bit (true color) ANSI color.
     /// Usage: emits \x1b[38;2;R;G;Bm for foreground color.
     #[derive(Copy, Clone, Debug)]
-    struct AnsiColor24(pub u8, pub u8, pub u8);
+    struct AnsiColor24(u8, u8, u8);
 
     impl AnsiColor24 {
         /// Returns the ANSI escape code for this color (24-bit/true color).
-        pub fn as_ansi_fg(&self) -> String {
+        fn as_ansi_fg(&self) -> String {
             format!("\x1b[38;2;{};{};{}m", self.0, self.1, self.2)
         }
         /// Returns the ANSI reset code.
-        pub fn reset() -> &'static str {
+        fn reset() -> &'static str {
             "\x1b[0m"
         }
     }
@@ -139,7 +139,7 @@ mod imp {
 mod imp {
     use super::*;
 
-    pub fn create_highlighter(_color: bool) -> Result<Box<dyn Highlighter>> {
+    pub(crate) fn create_highlighter(_color: bool) -> Result<Box<dyn Highlighter>> {
         // No-op highlighter for wasm
         return Ok(Box::new(NopHighlighter))
     }
