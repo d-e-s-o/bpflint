@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Added support for syntax highlighting printed source code
+- Added `--color` argument to force colored/uncolored output
+
+
 0.1.4
 -----
 - Updated `bpflint` dependency to `0.2.0`

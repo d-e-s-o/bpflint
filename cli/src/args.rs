@@ -74,9 +74,9 @@ pub struct Args {
     /// Number of lines to show before and after the lint match.
     #[arg(short = 'C', long = "context", value_parser = parse_context_line_count, conflicts_with_all = ["before", "after"])]
     pub context: Option<u8>,
-    /// Color output and use syntax highlighting for code snippets.
-    #[arg(long = "color", default_value_t = false)]
-    pub color: bool,
+    /// Whether or not to color output and or syntax highlighting for code snippets.
+    #[arg(long = "color")]
+    pub color: Option<bool>,
     /// Print a list of available lints.
     #[arg(long, exclusive = true)]
     pub print_lints: bool,
