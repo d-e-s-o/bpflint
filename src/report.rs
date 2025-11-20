@@ -1,9 +1,11 @@
 use std::io;
+use std::io::Error;
 use std::path::Path;
 
 use anyhow::Result;
 
 use crate::LintMatch;
+use crate::highlight::create_highlighter;
 use crate::lines::Lines;
 
 
@@ -12,6 +14,8 @@ use crate::lines::Lines;
 pub struct Opts {
     /// Extra lines of context to report before and after a match.
     pub extra_lines: (u8, u8),
+    /// Whether to colorize the output.
+    pub color: bool,
     /// The struct is non-exhaustive and open to extension.
     #[doc(hidden)]
     pub _non_exhaustive: (),
@@ -85,6 +89,8 @@ pub fn report_terminal_opts(
         range,
     } = r#match;
 
+    let highlighter = create_highlighter(opts.color)?;
+
     writeln!(writer, "warning: [{lint_name}] {message}")?;
     let start_row = range.start_point.row;
     let end_row = range.end_point.row;
@@ -121,7 +127,8 @@ pub fn report_terminal_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
-            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
+            writeln!(writer, "{row:width$} | {highlighted}")
         })?;
 
     // SANITY: It would be a tree-sitter bug the range does not
@@ -133,7 +140,8 @@ pub fn report_terminal_opts(
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
-        writeln!(writer, "{lprefix}{}", String::from_utf8_lossy(line))?;
+        let highlighted = highlighter.highlight(line)?;
+        writeln!(writer, "{lprefix}{highlighted}")?;
         writeln!(
             writer,
             "{prefix}{:indent$}{:^<width$}",
@@ -151,7 +159,8 @@ pub fn report_terminal_opts(
             // report it. If that's the case just ignore this empty
             // line.
             let Some(line) = lines.next() else { break };
-            writeln!(writer, "{lprefix} {c} {}", String::from_utf8_lossy(line))?;
+            let highlighted = highlighter.highlight(line)?;
+            writeln!(writer, "{lprefix} {c} {highlighted}")?;
         }
         writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
     }
@@ -161,7 +170,8 @@ pub fn report_terminal_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
-            writeln!(writer, "{row:width$} | {}", String::from_utf8_lossy(line))
+            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
+            writeln!(writer, "{row:width$} | {highlighted}")
         })?;
 
     writeln!(writer, "{prefix}")?;

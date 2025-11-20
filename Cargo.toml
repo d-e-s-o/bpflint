@@ -52,13 +52,16 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false, optional
 [dependencies]
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
-tree-sitter = "0.23"
 tree-sitter-bpf-c = { version = "0.2.3", git = "https://github.com/d-e-s-o/tree-sitter-bpf-c.git", rev = "41bf43d86a0443496cc09f9a912bdd27c40eb02a" }
 
 [dev-dependencies]
 bpflint = { path = ".", features = ["debug"] }
 indoc = "2.0"
 pretty_assertions = "1.4"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tree-sitter = "0.23"
+tree-sitter-highlight = "0.23"
 
 [lints]
 workspace = true
