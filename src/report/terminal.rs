@@ -1,9 +1,10 @@
 //! Functionality for reporting lint matches on a terminal.
 
 use std::io;
-use std::io::Error;
 use std::path::Path;
 
+use anyhow::Context as _;
+use anyhow::Error;
 use anyhow::Result;
 
 use crate::LintMatch;
@@ -130,8 +131,10 @@ pub fn report_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
-            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
-            writeln!(writer, "{row:width$} | {highlighted}")
+            let highlighted = highlighter
+                .highlight(line)
+                .context("failed to highlight source code line `{line}`")?;
+            writeln!(writer, "{row:width$} | {highlighted}").map_err(Error::from)
         })?;
 
     // SANITY: It would be a tree-sitter bug the range does not
@@ -143,7 +146,9 @@ pub fn report_opts(
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
-        let highlighted = highlighter.highlight(line)?;
+        let highlighted = highlighter
+            .highlight(line)
+            .context("failed to highlight source code line `{line}`")?;
         writeln!(writer, "{lprefix}{highlighted}")?;
         writeln!(
             writer,
@@ -162,7 +167,9 @@ pub fn report_opts(
             // report it. If that's the case just ignore this empty
             // line.
             let Some(line) = lines.next() else { break };
-            let highlighted = highlighter.highlight(line)?;
+            let highlighted = highlighter
+                .highlight(line)
+                .context("failed to highlight source code line `{line}`")?;
             writeln!(writer, "{lprefix} {c} {highlighted}")?;
         }
         writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
@@ -173,8 +180,10 @@ pub fn report_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
-            let highlighted = highlighter.highlight(line).map_err(Error::other)?;
-            writeln!(writer, "{row:width$} | {highlighted}")
+            let highlighted = highlighter
+                .highlight(line)
+                .context("failed to highlight source code line `{line}`")?;
+            writeln!(writer, "{row:width$} | {highlighted}").map_err(Error::from)
         })?;
 
     writeln!(writer, "{prefix}")?;
