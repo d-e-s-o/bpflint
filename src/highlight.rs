@@ -22,15 +22,16 @@ mod imp {
     use tree_sitter_highlight::Highlight;
     use tree_sitter_highlight::HighlightConfiguration;
     use tree_sitter_highlight::HighlightEvent;
+    use tree_sitter_highlight::Highlighter as TsHighlighter;
 
 
     struct TreeSitterHighlighter {
-        highlight_config: tree_sitter_highlight::HighlightConfiguration,
+        highlight_config: HighlightConfiguration,
     }
 
     impl TreeSitterHighlighter {
         fn new() -> Result<Self> {
-            let mut highlight_config = tree_sitter_highlight::HighlightConfiguration::new(
+            let mut highlight_config = HighlightConfiguration::new(
                 LANGUAGE.into(),
                 "bpf-c",
                 tree_sitter_bpf_c::HIGHLIGHTS_QUERY,
@@ -48,8 +49,8 @@ mod imp {
     }
 
     impl Highlighter for TreeSitterHighlighter {
-        fn highlight(&self, code: &[u8]) -> anyhow::Result<String> {
-            let mut highlighter = tree_sitter_highlight::Highlighter::new();
+        fn highlight(&self, code: &[u8]) -> Result<String> {
+            let mut highlighter = TsHighlighter::new();
             let highlights = highlighter.highlight(&self.highlight_config, code, None, |_| None)?;
             let mut result = String::new();
             for event in highlights {
