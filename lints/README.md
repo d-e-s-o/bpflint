@@ -22,7 +22,7 @@ a lint match. This can be useful for enforcing certain constraints. The
 [`untyped-map-member` lint][untyped-map-member-int-capture] exemplifies
 usage.
 
-A good introduction that to how a Query interfaces with the underlying
+A good introduction to how a Query interfaces with the underlying
 language grammar can be found in the ["Code Navigation Systems"
 chapter][tree-sitter-code-nav].
 
