@@ -195,6 +195,7 @@ pub fn report_opts(
 mod tests {
     use super::*;
 
+    use indoc::formatdoc;
     use indoc::indoc;
 
     use pretty_assertions::assert_eq;
@@ -387,6 +388,48 @@ mod tests {
               |     ^^^^^^^^^^^^^^
               | 
         "# };
+        assert_eq!(r, expected);
+    }
+
+    /// Check that our "terminal" reporting logic can syntax highlight
+    /// properly.
+    #[test]
+    fn terminal_reporting_highlighted() {
+        const COLOR_TEAL: &str = AnsiColor!("#0086b3");
+        const COLOR_PINK: &str = AnsiColor!("#a71d5d");
+        const COLOR_RESET: &str = "\x1b[0m";
+
+        let code = indoc! { r#"
+            SEC("kprobe/test")
+            int handle__test(void)
+            {
+            }
+        "# };
+
+        let m = LintMatch {
+            lint_name: "unstable-attach-point".to_string(),
+            message: "kprobe/kretprobe/fentry/fexit are unstable".to_string(),
+            range: Range {
+                bytes: 4..17,
+                start_point: Point { row: 0, col: 4 },
+                end_point: Point { row: 0, col: 17 },
+            },
+        };
+        let mut r = Vec::new();
+        let opts = Opts {
+            color: true,
+            ..Default::default()
+        };
+        let () = report_opts(&m, code.as_bytes(), Path::new("<stdin>"), &opts, &mut r).unwrap();
+        let r = String::from_utf8(r).unwrap();
+        let expected = formatdoc! { r#"
+            warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
+              --> <stdin>:0:4
+              | 
+            0 | {teal}SEC{reset}({pink}"kprobe/test"{reset})
+              |     ^^^^^^^^^^^^^
+              | 
+        "#, teal = COLOR_TEAL, pink = COLOR_PINK, reset = COLOR_RESET };
         assert_eq!(r, expected);
     }
 
