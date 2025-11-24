@@ -1,5 +1,14 @@
 use anyhow::Result;
 
+use super::ansi_color::COLOR_BLUE;
+use super::ansi_color::COLOR_DARKGRAY;
+use super::ansi_color::COLOR_GRAY;
+use super::ansi_color::COLOR_PINK;
+use super::ansi_color::COLOR_PURPLE;
+use super::ansi_color::COLOR_RESET;
+use super::ansi_color::COLOR_TEAL;
+
+
 pub(crate) trait Highlighter {
     fn highlight(&self, code: &[u8]) -> Result<String>;
 }
@@ -77,15 +86,6 @@ mod imp {
 
         TreeSitterHighlighter::new().map(|h| Box::new(h) as Box<dyn Highlighter>)
     }
-
-
-    const COLOR_PURPLE: &str = AnsiColor!("#795da3");
-    const COLOR_TEAL: &str = AnsiColor!("#0086b3");
-    const COLOR_PINK: &str = AnsiColor!("#a71d5d");
-    const COLOR_BLUE: &str = AnsiColor!("#183691");
-    const COLOR_GRAY: &str = AnsiColor!("#969896");
-    const COLOR_DARKGRAY: &str = AnsiColor!("#333333");
-    const COLOR_RESET: &str = "\x1b[0m";
 
 
     /// Syntax highlight mapping for GitHub Sublime theme (24-bit colors)
