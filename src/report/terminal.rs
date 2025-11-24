@@ -104,6 +104,10 @@ pub fn report_opts(
     let prefix_indent = (end_row + usize::from(opts.extra_lines.1))
         .to_string()
         .len();
+    // Additional indentation for code reported in a multi-line match.
+    // Code in multi-line matches has additional markers (' / ' or
+    // ' | ') in front, which need to be honored in all context.
+    let code_indent = if start_row == end_row { 0 } else { 3 };
 
     if range.bytes.is_empty() {
         return Ok(())
@@ -131,7 +135,7 @@ pub fn report_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
-            let lprefix = format!("{row:prefix_indent$} | ");
+            let lprefix = format!("{row:prefix_indent$} | {:code_indent$}", "");
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
@@ -181,7 +185,7 @@ pub fn report_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
-            let lprefix = format!("{row:prefix_indent$} | ");
+            let lprefix = format!("{row:prefix_indent$} | {:code_indent$}", "");
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
@@ -590,7 +594,7 @@ mod tests {
             code.as_bytes(),
             Path::new("<stdin>"),
             &Opts {
-                extra_lines: (1, 1),
+                extra_lines: (2, 2),
                 ..Default::default()
             },
             &mut r,
@@ -602,13 +606,15 @@ mod tests {
             warning: [probe-read] bpf_probe_read() is deprecated
               --> <stdin>:2:4
               | 
-            1 | int handle__sched_switch(u64 *ctx) {
+            0 |    SEC("tp_btf/sched_switch")
+            1 |    int handle__sched_switch(u64 *ctx) {
             2 |  /     bpf_probe_read(
             3 |  |       event.comm,
             4 |  |       TASK_COMM_LEN,
             5 |  |       prev->comm);
               |  |_________________^
-            6 |     return 0;
+            6 |        return 0;
+            7 |    }
               | 
         "# };
         assert_eq!(r, expected);
