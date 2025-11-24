@@ -203,6 +203,10 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
+    use super::super::ansi_color::COLOR_PINK;
+    use super::super::ansi_color::COLOR_RESET;
+    use super::super::ansi_color::COLOR_TEAL;
+
 
     /// Tests that a match with an empty range includes no code snippet.
     #[test]
@@ -395,10 +399,6 @@ mod tests {
     /// properly.
     #[test]
     fn terminal_reporting_highlighted() {
-        const COLOR_TEAL: &str = AnsiColor!("#0086b3");
-        const COLOR_PINK: &str = AnsiColor!("#a71d5d");
-        const COLOR_RESET: &str = "\x1b[0m";
-
         let code = indoc! { r#"
             SEC("kprobe/test")
             int handle__test(void)
