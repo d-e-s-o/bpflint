@@ -101,7 +101,7 @@ pub fn report_opts(
     let start_col = range.start_point.col;
     let end_col = range.end_point.col;
     writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
-    let width = (end_row + usize::from(opts.extra_lines.1))
+    let prefix_indent = (end_row + usize::from(opts.extra_lines.1))
         .to_string()
         .len();
 
@@ -111,7 +111,7 @@ pub fn report_opts(
 
     // Use the end row here, as it's the largest number, so we end up
     // with a consistent indentation.
-    let prefix = format!("{:width$} | ", "");
+    let prefix = format!("{:prefix_indent$} | ", "");
     writeln!(writer, "{prefix}")?;
 
     // Print source code context before the actual match. Need to
@@ -134,7 +134,7 @@ pub fn report_opts(
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
-            writeln!(writer, "{row:width$} | {highlighted}").map_err(Error::from)
+            writeln!(writer, "{row:prefix_indent$} | {highlighted}").map_err(Error::from)
         })?;
 
     // SANITY: It would be a tree-sitter bug the range does not
@@ -142,7 +142,7 @@ pub fn report_opts(
     let mut lines = Lines::new(code, range.bytes.start);
 
     if start_row == end_row {
-        let lprefix = format!("{start_row:width$} | ");
+        let lprefix = format!("{start_row:prefix_indent$} | ");
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
@@ -160,7 +160,7 @@ pub fn report_opts(
         )?;
     } else {
         for (idx, row) in (start_row..=end_row).enumerate() {
-            let lprefix = format!("{row:width$} | ");
+            let lprefix = format!("{row:prefix_indent$} | ");
             let c = if idx == 0 { "/" } else { "|" };
             // Our `Lines` logic may not report a trailing newline if it
             // is completely empty, but `tree-sitter` may actually
@@ -183,7 +183,7 @@ pub fn report_opts(
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
-            writeln!(writer, "{row:width$} | {highlighted}").map_err(Error::from)
+            writeln!(writer, "{row:prefix_indent$} | {highlighted}").map_err(Error::from)
         })?;
 
     writeln!(writer, "{prefix}")?;
