@@ -22,8 +22,8 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-    __uint(key_size, sizeof(u32));
-    __uint(value_size, sizeof(u32));
+    __type(key, u32);
+    __type(value, u32);
 } events SEC(".maps");
 
 SEC("tp_btf/sched_switch")
@@ -47,12 +47,17 @@ int handle__sched_switch(u64 *ctx)
                 if (dur > runtime_thresh_ns) {
                         struct event event = {0};
                         bpf_probe_read(event.comm, TASK_COMM_LEN, prev->comm);
-                        bpf_probe_read(event.bt, sizeof(t->bt), t->bt);
                         event.pid = prev_pid;
                         event.duration = dur;
                         event.bt_sample_cnt = t->bt_sample_cnt;
                         bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
                 }
+                bpf_loop(
+                        32,
+                        handle__sched_switch,
+                        ctx,
+                        0
+                );
         }
 
         t->running_at = 0;
