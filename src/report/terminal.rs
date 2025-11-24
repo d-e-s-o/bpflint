@@ -131,10 +131,11 @@ pub fn report_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
+            let lprefix = format!("{row:prefix_indent$} | ");
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
-            writeln!(writer, "{row:prefix_indent$} | {highlighted}").map_err(Error::from)
+            writeln!(writer, "{lprefix}{highlighted}").map_err(Error::from)
         })?;
 
     // SANITY: It would be a tree-sitter bug the range does not
@@ -180,10 +181,11 @@ pub fn report_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
+            let lprefix = format!("{row:prefix_indent$} | ");
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
-            writeln!(writer, "{row:prefix_indent$} | {highlighted}").map_err(Error::from)
+            writeln!(writer, "{lprefix}{highlighted}").map_err(Error::from)
         })?;
 
     writeln!(writer, "{prefix}")?;
