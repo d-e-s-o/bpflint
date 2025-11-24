@@ -1,8 +1,8 @@
 use anyhow::Result;
 
-use super::ansi_color::COLOR_BLUE;
 use super::ansi_color::COLOR_DARKGRAY;
 use super::ansi_color::COLOR_GRAY;
+use super::ansi_color::COLOR_INDIGO;
 use super::ansi_color::COLOR_PINK;
 use super::ansi_color::COLOR_PURPLE;
 use super::ansi_color::COLOR_RESET;
@@ -94,7 +94,7 @@ mod imp {
         ("function", COLOR_PURPLE),
         ("function.builtin", COLOR_TEAL),
         ("keyword", COLOR_PINK),
-        ("string", COLOR_BLUE),
+        ("string", COLOR_INDIGO),
         ("comment", COLOR_GRAY),
         ("type", COLOR_PINK),
         ("constant", COLOR_TEAL),

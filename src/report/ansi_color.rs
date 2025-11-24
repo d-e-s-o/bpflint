@@ -176,7 +176,7 @@ macro_rules! AnsiColor {
 pub(crate) const COLOR_PURPLE: &str = AnsiColor!("#795da3");
 pub(crate) const COLOR_TEAL: &str = AnsiColor!("#0086b3");
 pub(crate) const COLOR_PINK: &str = AnsiColor!("#a71d5d");
-pub(crate) const COLOR_BLUE: &str = AnsiColor!("#183691");
+pub(crate) const COLOR_INDIGO: &str = AnsiColor!("#183691");
 pub(crate) const COLOR_GRAY: &str = AnsiColor!("#969896");
 pub(crate) const COLOR_DARKGRAY: &str = AnsiColor!("#333333");
 pub(crate) const COLOR_RESET: &str = "\x1b[0m";
