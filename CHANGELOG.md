@@ -4,6 +4,8 @@ Unreleased
 - Added `unrolled-for-loop` lint
 - Introduced public `terminal` module with terminal related reporting
   functionality
+- Fixed inconsistent indentation of context in multi-line match terminal
+  reports
 - Decreased size of logo used in README
 
 
