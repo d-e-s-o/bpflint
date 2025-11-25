@@ -5,6 +5,9 @@ on:
   push:
   workflow_call:
 
+permissions:
+  actions: write
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
