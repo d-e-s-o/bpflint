@@ -29,10 +29,11 @@ use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 
 use bpflint::LintMatch;
+use bpflint::LintOpts;
 use bpflint::Point;
 use bpflint::Range;
 use bpflint::builtin_lints;
-use bpflint::lint;
+use bpflint::lint_custom_opts;
 use bpflint::terminal;
 
 
@@ -84,6 +85,7 @@ fn main_impl() -> Result<(), ExitError> {
         color,
         print_lints,
         verbosity,
+        kernel_version,
     } = args;
 
     let mut opts = terminal::Opts {
@@ -96,6 +98,11 @@ fn main_impl() -> Result<(), ExitError> {
     if let Some(after) = after.or(context) {
         opts.extra_lines.1 = after;
     }
+
+    let lint_opts = LintOpts {
+        kernel_version,
+        ..Default::default()
+    };
 
     let level = match verbosity {
         0 => Level::WARN,
@@ -147,8 +154,8 @@ fn main_impl() -> Result<(), ExitError> {
 
             let mut first = true;
             let match_ext = has_bpf_c_ext(src_path).not().then_some(&m_ext_is_c);
-            let matches =
-                lint(&code).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
+            let matches = lint_custom_opts(&code, builtin_lints(), &lint_opts)
+                .with_context(|| format!("failed to lint `{}`", src_path.display()))?;
             for m in match_ext.into_iter().chain(matches.iter()) {
                 if !first {
                     writeln!(&mut stdout)?;
