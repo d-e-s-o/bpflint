@@ -10,6 +10,10 @@ use anyhow::Result;
 use crate::LintMatch;
 use crate::lines::Lines;
 
+use super::ansi_color::COLOR_BLUE;
+use super::ansi_color::COLOR_BOLD;
+use super::ansi_color::COLOR_RED;
+use super::ansi_color::COLOR_RESET;
 use super::highlight::create_highlighter;
 
 
@@ -94,13 +98,29 @@ pub fn report_opts(
     } = r#match;
 
     let highlighter = create_highlighter(opts.color)?;
+    let w;
+    let hl;
+    let (bold, warn, highlight, reset) = if opts.color {
+        w = format!("{COLOR_BOLD}{COLOR_RED}");
+        hl = format!("{COLOR_BOLD}{COLOR_BLUE}");
+        (COLOR_BOLD, w.as_str(), hl.as_str(), COLOR_RESET)
+    } else {
+        ("", "", "", "")
+    };
 
-    writeln!(writer, "warning: [{lint_name}] {message}")?;
+    writeln!(
+        writer,
+        "{warn}warning{reset}{bold}: [{lint_name}] {message}{reset}"
+    )?;
     let start_row = range.start_point.row;
     let end_row = range.end_point.row;
     let start_col = range.start_point.col;
     let end_col = range.end_point.col;
-    writeln!(writer, "  --> {}:{start_row}:{start_col}", path.display())?;
+    writeln!(
+        writer,
+        "  {highlight}-->{reset} {}:{start_row}:{start_col}",
+        path.display()
+    )?;
     let prefix_indent = (end_row + usize::from(opts.extra_lines.1))
         .to_string()
         .len();
@@ -115,7 +135,7 @@ pub fn report_opts(
 
     // Use the end row here, as it's the largest number, so we end up
     // with a consistent indentation.
-    let prefix = format!("{:prefix_indent$} | ", "");
+    let prefix = format!("{highlight}{:prefix_indent$} |{reset} ", "");
     writeln!(writer, "{prefix}")?;
 
     // Print source code context before the actual match. Need to
@@ -135,7 +155,10 @@ pub fn report_opts(
         .rev()
         .try_for_each(|(row_sub, line)| {
             let row = start_row - row_sub - 1;
-            let lprefix = format!("{row:prefix_indent$} | {:code_indent$}", "");
+            let lprefix = format!(
+                "{highlight}{row:prefix_indent$} |{reset} {:code_indent$}",
+                ""
+            );
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
@@ -147,7 +170,7 @@ pub fn report_opts(
     let mut lines = Lines::new(code, range.bytes.start);
 
     if start_row == end_row {
-        let lprefix = format!("{start_row:prefix_indent$} | ");
+        let lprefix = format!("{highlight}{start_row:prefix_indent$} |{reset} ");
         // SANITY: `Lines` will always report at least a single
         //          line.
         let line = lines.next().unwrap();
@@ -157,7 +180,7 @@ pub fn report_opts(
         writeln!(writer, "{lprefix}{highlighted}")?;
         writeln!(
             writer,
-            "{prefix}{:indent$}{:^<width$}",
+            "{prefix}{:indent$}{warn}{:^<width$}{reset}",
             "",
             "",
             indent = start_col,
@@ -165,7 +188,7 @@ pub fn report_opts(
         )?;
     } else {
         for (idx, row) in (start_row..=end_row).enumerate() {
-            let lprefix = format!("{row:prefix_indent$} | ");
+            let lprefix = format!("{highlight}{row:prefix_indent$} |{reset} ");
             let c = if idx == 0 { "/" } else { "|" };
             // Our `Lines` logic may not report a trailing newline if it
             // is completely empty, but `tree-sitter` may actually
@@ -175,9 +198,14 @@ pub fn report_opts(
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
-            writeln!(writer, "{lprefix} {c} {highlighted}")?;
+            writeln!(writer, "{lprefix} {warn}{c}{reset} {highlighted}")?;
         }
-        writeln!(writer, "{prefix} |{:_<width$}^", "", width = end_col)?;
+        writeln!(
+            writer,
+            "{prefix} {warn}|{:_<width$}^{reset}",
+            "",
+            width = end_col
+        )?;
     }
 
     let () = lines
@@ -185,7 +213,10 @@ pub fn report_opts(
         .enumerate()
         .try_for_each(|(row_add, line)| {
             let row = end_row + row_add + 1;
-            let lprefix = format!("{row:prefix_indent$} | {:code_indent$}", "");
+            let lprefix = format!(
+                "{highlight}{row:prefix_indent$} |{reset} {:code_indent$}",
+                ""
+            );
             let highlighted = highlighter
                 .highlight(line)
                 .context("failed to highlight source code line `{line}`")?;
@@ -429,13 +460,20 @@ mod tests {
         let () = report_opts(&m, code.as_bytes(), Path::new("<stdin>"), &opts, &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = formatdoc! { r#"
-            warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
-              --> <stdin>:0:4
-              | 
-            0 | {teal}SEC{reset}({pink}"kprobe/test"{reset})
-              |     ^^^^^^^^^^^^^
-              | 
-        "#, teal = COLOR_TEAL, pink = COLOR_PINK, reset = COLOR_RESET };
+            {bold}{red}warning{reset}{bold}: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable{reset}
+              {bold}{blue}-->{reset} <stdin>:0:4
+            {bold}{blue}  |{reset} 
+            {bold}{blue}0 |{reset} {teal}SEC{reset}({pink}"kprobe/test"{reset})
+            {bold}{blue}  |{reset}     {bold}{red}^^^^^^^^^^^^^{reset}
+            {bold}{blue}  |{reset} 
+        "#,
+          red = COLOR_RED,
+          bold = COLOR_BOLD,
+          blue = COLOR_BLUE,
+          teal = COLOR_TEAL,
+          pink = COLOR_PINK,
+          reset = COLOR_RESET,
+        };
         assert_eq!(r, expected);
     }
 

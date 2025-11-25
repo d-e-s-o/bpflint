@@ -4,6 +4,7 @@ Unreleased
 - Added `unrolled-for-loop` lint
 - Introduced public `terminal` module with terminal related reporting
   functionality
+- Added `terminal::Opts::color` attribute for colorized terminal output
 - Fixed inconsistent indentation of context in multi-line match terminal
   reports
 - Decreased size of logo used in README

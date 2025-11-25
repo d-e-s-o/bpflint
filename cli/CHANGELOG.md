@@ -1,6 +1,6 @@
 Unreleased
 ----------
-- Added support for syntax highlighting printed source code
+- Added support for colored lint match reporting
 - Added `--color` argument to force colored/uncolored output
 
 
