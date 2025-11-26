@@ -83,6 +83,9 @@ pub struct Args {
     /// Increase verbosity (can be supplied multiple times).
     #[arg(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
     pub verbosity: u8,
+    /// User kernel version to check lints against
+    #[arg(short = 'k', long = "kernel_version")]
+    pub kernel_version: Option<String>,
 }
 
 

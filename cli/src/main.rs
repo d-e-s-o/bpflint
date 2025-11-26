@@ -84,6 +84,7 @@ fn main_impl() -> Result<(), ExitError> {
         color,
         print_lints,
         verbosity,
+        kernel_version,
     } = args;
 
     let mut opts = terminal::Opts {
@@ -95,6 +96,13 @@ fn main_impl() -> Result<(), ExitError> {
     }
     if let Some(after) = after.or(context) {
         opts.extra_lines.1 = after;
+    }
+
+    let mut lint_opts = bpflint::LintOpts::default();
+    if let Some(kernel_version) = kernel_version {
+        lint_opts.kernel_version = kernel_version
+            .parse()
+            .with_context(|| format!("invalid kernel version: '{kernel_version}'"))?;
     }
 
     let level = match verbosity {
@@ -147,8 +155,8 @@ fn main_impl() -> Result<(), ExitError> {
 
             let mut first = true;
             let match_ext = has_bpf_c_ext(src_path).not().then_some(&m_ext_is_c);
-            let matches =
-                lint(&code).with_context(|| format!("failed to lint `{}`", src_path.display()))?;
+            let matches = lint(&code, &lint_opts)
+                .with_context(|| format!("failed to lint `{}`", src_path.display()))?;
             for m in match_ext.into_iter().chain(matches.iter()) {
                 if !first {
                     writeln!(&mut stdout)?;

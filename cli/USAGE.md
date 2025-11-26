@@ -30,6 +30,9 @@ Options:
   -v, --verbose...
           Increase verbosity (can be supplied multiple times)
 
+  -k, --kernel_version <KERNEL_VERSION>
+          User kernel version to check lints against
+
   -h, --help
           Print help (see a summary with '-h')
 
