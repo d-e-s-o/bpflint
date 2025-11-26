@@ -6,7 +6,6 @@
 //! ```
 
 use std::io::stdout;
-use std::path::Path;
 
 use indoc::indoc;
 
@@ -47,7 +46,7 @@ fn main() {
     report_opts(
         &matches[0],
         code,
-        Path::new("task_longrun.bpf.c"),
+        "task_longrun.bpf.c",
         &opts,
         &mut stdout().lock(),
     )

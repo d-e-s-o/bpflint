@@ -1,7 +1,6 @@
 //! Functionality for reporting lint matches on a terminal.
 
 use std::io;
-use std::path::Path;
 
 use anyhow::Context as _;
 use anyhow::Error;
@@ -11,7 +10,6 @@ use crate::LintMatch;
 use crate::lines::Lines;
 
 use super::highlight::create_highlighter;
-
 
 /// Configuration options for terminal reporting.
 #[derive(Default, Clone, Debug)]
@@ -49,7 +47,7 @@ pub struct Opts {
 pub fn report(
     r#match: &LintMatch,
     code: &[u8],
-    path: &Path,
+    path: impl AsRef<str>,
     writer: &mut dyn io::Write,
 ) -> Result<()> {
     report_opts(r#match, code, path, &Opts::default(), writer)
@@ -65,6 +63,9 @@ pub fn report(
 /// - `opts` specifies the reporting options including context lines
 /// - `writer` is a reference to a [`io::Write`] to which to write the
 ///   report
+///
+/// Since this report can be used in a WASM context, we must be sure that
+/// any provided input may be properly HTML escaped.
 ///
 /// # Example
 /// ```text
@@ -83,7 +84,7 @@ pub fn report(
 pub fn report_opts(
     r#match: &LintMatch,
     code: &[u8],
-    path: &Path,
+    path: impl AsRef<str>,
     opts: &Opts,
     writer: &mut dyn io::Write,
 ) -> Result<()> {
@@ -92,9 +93,8 @@ pub fn report_opts(
         message,
         range,
     } = r#match;
-
+    let path = path.as_ref();
     let highlighter = create_highlighter(opts.color)?;
-
     let (bold, warn, highlight, reset) = highlighter.format_strings();
 
     writeln!(
@@ -107,8 +107,7 @@ pub fn report_opts(
     let end_col = range.end_point.col;
     writeln!(
         writer,
-        "  {highlight}-->{reset} {}:{start_row}:{start_col}",
-        path.display()
+        "  {highlight}-->{reset} {path}:{start_row}:{start_col}"
     )?;
     let prefix_indent = (end_row + usize::from(opts.extra_lines.1))
         .to_string()
@@ -254,7 +253,7 @@ mod tests {
             },
         };
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("./no_bytes.c"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "./no_bytes.c", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [bogus-file-extension] by convention BPF C code should use the file extension '.bpf.c'
@@ -287,7 +286,7 @@ mod tests {
             },
         };
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -333,7 +332,7 @@ mod tests {
             },
         };
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -370,7 +369,7 @@ mod tests {
         };
 
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
 
         // Note that ideally we'd fine a way to just highlight the
@@ -411,7 +410,7 @@ mod tests {
             },
         };
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [probe-read] bpf_probe_read() is deprecated
@@ -449,7 +448,7 @@ mod tests {
             color: true,
             ..Default::default()
         };
-        let () = report_opts(&m, code.as_bytes(), Path::new("<stdin>"), &opts, &mut r).unwrap();
+        let () = report_opts(&m, code.as_bytes(), "<stdin>", &opts, &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = formatdoc! { r#"
             {bold}{red}warning{reset}{bold}: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable{reset}
@@ -490,7 +489,7 @@ mod tests {
             },
         };
         let mut r = Vec::new();
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut r).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut r).unwrap();
         let r = String::from_utf8(r).unwrap();
         let expected = indoc! { r#"
             warning: [unstable-attach-point] kprobe/kretprobe/fentry/fexit are unstable
@@ -531,11 +530,11 @@ mod tests {
         let mut report_old = Vec::new();
         let mut report_new = Vec::new();
 
-        let () = report(&m, code.as_bytes(), Path::new("<stdin>"), &mut report_old).unwrap();
+        let () = report(&m, code.as_bytes(), "<stdin>", &mut report_old).unwrap();
         let () = report_opts(
             &m,
             code.as_bytes(),
-            Path::new("<stdin>"),
+            "<stdin>",
             &Opts::default(),
             &mut report_new,
         )
@@ -571,7 +570,7 @@ mod tests {
         let () = report_opts(
             &m,
             code.as_bytes(),
-            Path::new("<stdin>"),
+            "<stdin>",
             &Opts {
                 extra_lines: (2, 1),
                 ..Default::default()
@@ -622,7 +621,7 @@ mod tests {
         let () = report_opts(
             &m,
             code.as_bytes(),
-            Path::new("<stdin>"),
+            "<stdin>",
             &Opts {
                 extra_lines: (2, 2),
                 ..Default::default()
@@ -673,7 +672,7 @@ mod tests {
         let () = report_opts(
             &m,
             code.as_bytes(),
-            Path::new("<stdin>"),
+            "<stdin>",
             &Opts {
                 extra_lines: (5, 2),
                 ..Default::default()
@@ -720,7 +719,7 @@ mod tests {
         let () = report_opts(
             &m,
             code.as_bytes(),
-            Path::new("<stdin>"),
+            "<stdin>",
             &Opts {
                 extra_lines: (1, 5),
                 ..Default::default()

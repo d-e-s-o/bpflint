@@ -1,7 +1,5 @@
 //! Helpers for testing the linting functionality.
 
-use std::path::Path;
-
 use bpflint::lint;
 use bpflint::terminal::report;
 
@@ -16,7 +14,7 @@ where
     let () = lint(code.as_ref())
         .unwrap()
         .into_iter()
-        .try_for_each(|m| report(&m, code.as_ref(), Path::new("<stdin>"), &mut r))
+        .try_for_each(|m| report(&m, code.as_ref(), "<stdin>", &mut r))
         .unwrap();
     let r = String::from_utf8(r).unwrap();
     r

@@ -163,7 +163,13 @@ fn main_impl() -> Result<(), ExitError> {
                     first = false;
                 }
 
-                let () = terminal::report_opts(m, &code, src_path, &opts, &mut stdout)?;
+                let () = terminal::report_opts(
+                    m,
+                    &code,
+                    src_path.to_string_lossy(),
+                    &opts,
+                    &mut stdout,
+                )?;
                 if result.is_ok() {
                     result = Err(ExitError::ExitCode(ExitCode::FAILURE));
                 }

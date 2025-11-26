@@ -113,7 +113,6 @@ pub use crate::report::terminal;
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use std::io::Write as _;
-    use std::path::PathBuf;
 
     use anyhow::Context as _;
     use anyhow::Error;
@@ -121,6 +120,11 @@ mod wasm {
     use wasm_bindgen::prelude::wasm_bindgen;
 
     use super::*;
+
+    /// Escape HTML of the provided input
+    fn escape_html(text: &str) -> String {
+        html_escape::encode_safe(text).to_string()
+    }
 
     /// Lint source code `code` representing a file at `path` and
     /// produce a report, end-to-end. `context` describes the number of
@@ -132,29 +136,35 @@ mod wasm {
     /// anyway.
     #[wasm_bindgen]
     pub fn lint_html(code: Vec<u8>, path: String, context: u8) -> Result<String, String> {
-        fn lint_impl(code: Vec<u8>, path: PathBuf, context: u8) -> Result<String, Error> {
+        fn lint_impl(code: Vec<u8>, path: String, context: u8) -> Result<String, Error> {
             let opts = terminal::Opts {
                 extra_lines: (context, context),
+                color: true,
                 ..Default::default()
             };
             let mut first = true;
             let mut report = Vec::new();
             let matches = lint(&code)?;
-            for m in matches {
+            for mut m in matches {
                 if !first {
                     writeln!(&mut report)?;
                 } else {
                     first = false;
                 }
 
-                let () = terminal::report_opts(&m, &code, &path, &opts, &mut report)?;
+                // Let's now make the match and other input to the terminal HTML safe
+                m.lint_name = escape_html(&m.lint_name);
+                m.message = escape_html(&m.message);
+                let escaped_path = escape_html(&path);
+
+                let () = terminal::report_opts(&m, &code, &escaped_path, &opts, &mut report)?;
             }
             let report =
                 String::from_utf8(report).context("generated report contains invalid UTF-8")?;
             Ok(report)
         }
 
-        lint_impl(code, PathBuf::from(path), context).map_err(|err| format!("{err:?}"))
+        lint_impl(code, path, context).map_err(|err| format!("{err:?}"))
     }
 }
 

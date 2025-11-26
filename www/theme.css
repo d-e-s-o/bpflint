@@ -1,0 +1,70 @@
+/* Theme for bpflint HTML output */
+
+/* Formatting styles */
+.bold {
+  font-weight: bold;
+}
+
+.warn {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.highlight {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+/* Syntax highlighting styles (matching tree-sitter-highlight) */
+.hl-constant {
+  color: #795da3;
+}
+
+.hl-string {
+  color: #a71d5d;
+}
+
+.hl-comment {
+  color: #969896;
+  font-style: italic;
+}
+
+.hl-function {
+  color: #0086b3;
+}
+
+.hl-keyword {
+  color: #a71d5d;
+}
+
+.hl-type {
+  color: #0086b3;
+}
+
+.hl-number {
+  color: #183691;
+}
+
+.hl-operator {
+  color: #333333;
+}
+
+.hl-variable {
+  color: #333333;
+}
+
+.hl-property {
+  color: #0086b3;
+}
+
+.hl-punctuation {
+  color: #333333;
+}
+
+.hl-tag {
+  color: #0086b3;
+}
+
+.hl-attribute {
+  color: #0086b3;
+}
