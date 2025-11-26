@@ -53,6 +53,7 @@ wasm-bindgen-cli-support = { version = "0.2", default-features = false, optional
 anyhow = "1.0"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 tree-sitter-bpf-c = "0.2.3"
+tree-sitter-highlight-wasm = "0.25"
 
 [dev-dependencies]
 bpflint = { path = ".", features = ["debug"] }
@@ -61,7 +62,6 @@ pretty_assertions = "1.4"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tree-sitter = "0.25"
-tree-sitter-highlight = "0.25"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tree-sitter = { package = "tree-sitter-c2rust", version = "0.25" }
