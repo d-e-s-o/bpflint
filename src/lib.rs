@@ -112,8 +112,9 @@ pub use crate::report::terminal;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
+    use std::borrow::Cow;
     use std::io::Write as _;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use anyhow::Context as _;
     use anyhow::Error;
@@ -121,6 +122,11 @@ mod wasm {
     use wasm_bindgen::prelude::wasm_bindgen;
 
     use super::*;
+
+    /// Escape HTML of the provided input.
+    fn escape_html(text: &str) -> Cow<'_, str> {
+        html_escape::encode_safe(text)
+    }
 
     /// Lint source code `code` representing a file at `path` and
     /// produce a report, end-to-end. `context` describes the number of
@@ -132,9 +138,10 @@ mod wasm {
     /// anyway.
     #[wasm_bindgen]
     pub fn lint_html(code: Vec<u8>, path: String, context: u8) -> Result<String, String> {
-        fn lint_impl(code: Vec<u8>, path: PathBuf, context: u8) -> Result<String, Error> {
+        fn lint_impl(code: Vec<u8>, path: String, context: u8) -> Result<String, Error> {
             let opts = terminal::Opts {
                 extra_lines: (context, context),
+                color: true,
                 ..Default::default()
             };
             let mut first = true;
@@ -147,14 +154,29 @@ mod wasm {
                     first = false;
                 }
 
-                let () = terminal::report_opts(&m, &code, &path, &opts, &mut report)?;
+                // Let's now make the match and other input to the
+                // terminal HTML safe.
+                let LintMatch {
+                    lint_name,
+                    message,
+                    range,
+                } = m;
+                let m = LintMatch {
+                    lint_name: escape_html(&lint_name).into_owned(),
+                    message: escape_html(&message).into_owned(),
+                    range,
+                };
+                let path = escape_html(&path);
+                let escaped_path = Path::new(path.as_ref());
+
+                let () = terminal::report_opts(&m, &code, escaped_path, &opts, &mut report)?;
             }
             let report =
                 String::from_utf8(report).context("generated report contains invalid UTF-8")?;
             Ok(report)
         }
 
-        lint_impl(code, PathBuf::from(path), context).map_err(|err| format!("{err:?}"))
+        lint_impl(code, path, context).map_err(|err| format!("{err:?}"))
     }
 }
 
