@@ -136,10 +136,12 @@
       // Reset value to trigger `change` event on subsequent selection.
       fileInput.value = '';
 
-      const reader = new FileReader();
-      code_ = new Uint8Array(reader.result);
       path_ = file.name;
-      reader.onload = () => lint(code_, path_);
+      const reader = new FileReader();
+      reader.onload = () => {
+        code_ = new Uint8Array(reader.result);
+        lint(code_, path_);
+      };
       reader.onerror = () => {
         lintMessages.value = '';
         errorBox.textContent = 'Error reading file: ' + reader.error;
