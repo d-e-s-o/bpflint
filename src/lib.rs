@@ -89,6 +89,7 @@ mod wasm {
         fn lint_impl(code: Vec<u8>, path: PathBuf, context: u8) -> Result<String, Error> {
             let opts = terminal::Opts {
                 extra_lines: (context, context),
+                color: true,
                 ..Default::default()
             };
             let mut first = true;

@@ -10,11 +10,53 @@ use anyhow::Result;
 use crate::LintMatch;
 use crate::lines::Lines;
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::ansi_color::COLOR_BLUE;
+#[cfg(not(target_arch = "wasm32"))]
 use super::ansi_color::COLOR_BOLD;
+#[cfg(not(target_arch = "wasm32"))]
 use super::ansi_color::COLOR_RED;
+#[cfg(not(target_arch = "wasm32"))]
 use super::ansi_color::COLOR_RESET;
 use super::highlight::create_highlighter;
+
+
+/// Get the formatting strings for the current target.
+/// For non-WASM (terminal), returns ANSI escape codes.
+/// For WASM (HTML), returns HTML span tags.
+#[cfg(not(target_arch = "wasm32"))]
+fn get_format_strings(color: bool) -> (&'static str, String, String, &'static str) {
+    if color {
+        let w = format!("{COLOR_BOLD}{COLOR_RED}");
+        let hl = format!("{COLOR_BOLD}{COLOR_BLUE}");
+        (COLOR_BOLD, w, hl, COLOR_RESET)
+    } else {
+        ("", String::new(), String::new(), "")
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_format_strings(_color: bool) -> (&'static str, &'static str, &'static str, &'static str) {
+    (
+        "<span class=\"bold\">",
+        "<span class=\"warn\">",
+        "<span class=\"highlight\">",
+        "</span>",
+    )
+}
+
+/// Escape HTML special characters in a string.
+/// For non-WASM (terminal), this is a no-op.
+/// For WASM (HTML), this escapes HTML entities.
+#[cfg(not(target_arch = "wasm32"))]
+fn escape_html(text: &str) -> String {
+    text.to_string()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn escape_html(text: &str) -> String {
+    html_escape::encode_safe(text).to_string()
+}
 
 
 /// Configuration options for terminal reporting.
@@ -98,19 +140,15 @@ pub fn report_opts(
     } = r#match;
 
     let highlighter = create_highlighter(opts.color)?;
-    let w;
-    let hl;
-    let (bold, warn, highlight, reset) = if opts.color {
-        w = format!("{COLOR_BOLD}{COLOR_RED}");
-        hl = format!("{COLOR_BOLD}{COLOR_BLUE}");
-        (COLOR_BOLD, w.as_str(), hl.as_str(), COLOR_RESET)
-    } else {
-        ("", "", "", "")
-    };
+    let (bold, warn, highlight, reset) = get_format_strings(opts.color);
+
+    let escaped_lint_name = escape_html(lint_name);
+    let escaped_message = escape_html(message);
+    let escaped_path = escape_html(&path.display().to_string());
 
     writeln!(
         writer,
-        "{warn}warning{reset}{bold}: [{lint_name}] {message}{reset}"
+        "{warn}warning{reset}{bold}: [{escaped_lint_name}] {escaped_message}{reset}"
     )?;
     let start_row = range.start_point.row;
     let end_row = range.end_point.row;
@@ -118,8 +156,7 @@ pub fn report_opts(
     let end_col = range.end_point.col;
     writeln!(
         writer,
-        "  {highlight}-->{reset} {}:{start_row}:{start_col}",
-        path.display()
+        "  {highlight}-->{reset} {escaped_path}:{start_row}:{start_col}"
     )?;
     let prefix_indent = (end_row + usize::from(opts.extra_lines.1))
         .to_string()
@@ -240,7 +277,10 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
+    use super::super::ansi_color::COLOR_BLUE;
+    use super::super::ansi_color::COLOR_BOLD;
     use super::super::ansi_color::COLOR_PINK;
+    use super::super::ansi_color::COLOR_RED;
     use super::super::ansi_color::COLOR_RESET;
     use super::super::ansi_color::COLOR_TEAL;
 
