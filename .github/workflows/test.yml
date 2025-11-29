@@ -75,7 +75,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+          target: wasm32-unknown-unknown
       - run: cargo clippy --no-deps --all-targets --workspace -- -A unknown_lints -D warnings
+      - run: cargo clippy --target wasm32-unknown-unknown --no-deps --all-targets --workspace -- -A unknown_lints -D warnings
   rustfmt:
     name: Check Rust code formatting
     runs-on: ubuntu-latest
