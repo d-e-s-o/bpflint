@@ -1,24 +1,30 @@
 use anyhow::Result;
 
-use super::ansi_color::COLOR_DARKGRAY;
-use super::ansi_color::COLOR_GRAY;
-use super::ansi_color::COLOR_INDIGO;
-use super::ansi_color::COLOR_PINK;
-use super::ansi_color::COLOR_PURPLE;
-use super::ansi_color::COLOR_RESET;
-use super::ansi_color::COLOR_TEAL;
-
-
 pub(crate) trait Highlighter {
     fn highlight(&self, code: &[u8]) -> Result<String>;
+
+    /// Provides the formatting strings
+    ///
+    /// # Returns
+    ///
+    /// A tuple `(bold, warning, highlight, reset)`
+    fn format_strings(&self) -> (&'static str, String, String, &'static str);
 }
 
 
+/// Represents a "No Operation" (Nop) highlighter that performs no actual highlighting.
+///
+/// It returns the input code as-is, and provides empty format strings. This is
+/// typically used as a fallback when highlighting is disabled or unnecessary.
 struct NopHighlighter;
 
 impl Highlighter for NopHighlighter {
     fn highlight(&self, code: &[u8]) -> Result<String> {
         Ok(String::from_utf8_lossy(code).to_string())
+    }
+
+    fn format_strings(&self) -> (&'static str, String, String, &'static str) {
+        ("", String::new(), String::new(), "")
     }
 }
 
@@ -32,6 +38,17 @@ mod imp {
     use tree_sitter_highlight::HighlightConfiguration;
     use tree_sitter_highlight::HighlightEvent;
     use tree_sitter_highlight::Highlighter as TsHighlighter;
+
+    use super::super::ansi_color::COLOR_BLUE;
+    use super::super::ansi_color::COLOR_BOLD;
+    use super::super::ansi_color::COLOR_DARKGRAY;
+    use super::super::ansi_color::COLOR_GRAY;
+    use super::super::ansi_color::COLOR_INDIGO;
+    use super::super::ansi_color::COLOR_PINK;
+    use super::super::ansi_color::COLOR_PURPLE;
+    use super::super::ansi_color::COLOR_RED;
+    use super::super::ansi_color::COLOR_RESET;
+    use super::super::ansi_color::COLOR_TEAL;
 
 
     struct TreeSitterHighlighter {
@@ -76,6 +93,12 @@ mod imp {
                 }
             }
             Ok(result)
+        }
+
+        fn format_strings(&self) -> (&'static str, String, String, &'static str) {
+            let w = format!("{COLOR_BOLD}{COLOR_RED}");
+            let hl = format!("{COLOR_BOLD}{COLOR_BLUE}");
+            (COLOR_BOLD, w, hl, COLOR_RESET)
         }
     }
 
@@ -128,7 +151,7 @@ mod imp {
 
     pub(crate) fn create_highlighter(_color: bool) -> Result<Box<dyn Highlighter>> {
         // No-op highlighter for wasm
-        return Ok(Box::new(NopHighlighter))
+        Ok(Box::new(NopHighlighter))
     }
 }
 

@@ -10,10 +10,6 @@ use anyhow::Result;
 use crate::LintMatch;
 use crate::lines::Lines;
 
-use super::ansi_color::COLOR_BLUE;
-use super::ansi_color::COLOR_BOLD;
-use super::ansi_color::COLOR_RED;
-use super::ansi_color::COLOR_RESET;
 use super::highlight::create_highlighter;
 
 
@@ -98,15 +94,8 @@ pub fn report_opts(
     } = r#match;
 
     let highlighter = create_highlighter(opts.color)?;
-    let w;
-    let hl;
-    let (bold, warn, highlight, reset) = if opts.color {
-        w = format!("{COLOR_BOLD}{COLOR_RED}");
-        hl = format!("{COLOR_BOLD}{COLOR_BLUE}");
-        (COLOR_BOLD, w.as_str(), hl.as_str(), COLOR_RESET)
-    } else {
-        ("", "", "", "")
-    };
+
+    let (bold, warn, highlight, reset) = highlighter.format_strings();
 
     writeln!(
         writer,
@@ -240,7 +229,10 @@ mod tests {
     use crate::Point;
     use crate::Range;
 
+    use super::super::ansi_color::COLOR_BLUE;
+    use super::super::ansi_color::COLOR_BOLD;
     use super::super::ansi_color::COLOR_PINK;
+    use super::super::ansi_color::COLOR_RED;
     use super::super::ansi_color::COLOR_RESET;
     use super::super::ansi_color::COLOR_TEAL;
 

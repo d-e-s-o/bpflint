@@ -137,7 +137,6 @@ mod wasm {
                 extra_lines: (context, context),
                 ..Default::default()
             };
-            let lint_opts = LintOpts::default();
             let mut first = true;
             let mut report = Vec::new();
             let matches = lint(&code)?;
