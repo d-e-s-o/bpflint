@@ -59,31 +59,31 @@ fn parse_context_line_count(s: &str) -> Result<u8> {
 
 /// A command line interface for bpflint.
 #[derive(Debug, Parser)]
-#[command(version = env!("VERSION"))]
+#[clap(version = env!("VERSION"))]
 pub struct Args {
     /// The BPF C source files to lint.
     ///
     /// Use '@file' syntax to include a (newline separated) list of
     /// files from 'file'.
-    #[arg(required = true, value_name = "[@]SRCS", value_parser = parse_files)]
+    #[clap(required = true, value_name = "[@]SRCS", value_parser = parse_files)]
     pub srcs: Vec<Vec<PathBuf>>,
     /// Number of lines to show before the lint match.
-    #[arg(short = 'B', long = "before", value_parser = parse_context_line_count)]
+    #[clap(short = 'B', long = "before", value_parser = parse_context_line_count)]
     pub before: Option<u8>,
     /// Number of lines to show after the lint match.
-    #[arg(short = 'A', long = "after", value_parser = parse_context_line_count)]
+    #[clap(short = 'A', long = "after", value_parser = parse_context_line_count)]
     pub after: Option<u8>,
     /// Number of lines to show before and after the lint match.
-    #[arg(short = 'C', long = "context", value_parser = parse_context_line_count, conflicts_with_all = ["before", "after"])]
+    #[clap(short = 'C', long = "context", value_parser = parse_context_line_count, conflicts_with_all = ["before", "after"])]
     pub context: Option<u8>,
     /// Whether or not to color output and or syntax highlighting for code snippets.
-    #[arg(long = "color")]
+    #[clap(long = "color")]
     pub color: Option<bool>,
     /// Print a list of available lints.
-    #[arg(long, exclusive = true)]
+    #[clap(long, exclusive = true)]
     pub print_lints: bool,
     /// Increase verbosity (can be supplied multiple times).
-    #[arg(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
+    #[clap(short = 'v', long = "verbose", global = true, action = ArgAction::Count)]
     pub verbosity: u8,
     /// User kernel version to check lints against
     #[arg(short = 'k', long = "kernel_version")]
