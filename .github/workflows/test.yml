@@ -85,7 +85,7 @@ jobs:
       - run: npm install --global js-beautify
       - run: js-beautify --replace --indent-size 2 --end-with-newline www/index.html
       - run: git diff --color=always --exit-code
-  cargo-doc:
+  rustdoc:
     name: Generate documentation
     runs-on: ubuntu-latest
     env:
