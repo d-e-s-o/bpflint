@@ -14,6 +14,7 @@ use tree_sitter_bpf_c::LANGUAGE;
 
 use crate::Point;
 use crate::Range;
+use crate::Version;
 
 
 mod lints {
@@ -63,6 +64,16 @@ impl AsRef<Lint> for Lint {
     fn as_ref(&self) -> &Lint {
         self
     }
+}
+
+/// Configuration options for lints.
+#[derive(Default, Clone, Debug)]
+pub struct LintOpts {
+    /// The minimum kernel version being targeted.
+    pub kernel_version: Option<Version>,
+    /// The struct is non-exhaustive and open to extension.
+    #[doc(hidden)]
+    pub _non_exhaustive: (),
 }
 
 
@@ -133,7 +144,12 @@ fn is_lint_disabled(lint_name: &str, mut node: Node, code: &[u8]) -> bool {
 }
 
 
-fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
+fn lint_impl(
+    tree: &Tree,
+    code: &[u8],
+    lint: &Lint,
+    lint_opts: &LintOpts,
+) -> Result<Vec<LintMatch>> {
     let Lint {
         name: lint_name,
         code: lint_src,
@@ -149,6 +165,24 @@ fn lint_impl(tree: &Tree, code: &[u8], lint: &Lint) -> Result<Vec<LintMatch>> {
         for capture in m.captures {
             if is_lint_disabled(lint_name, capture.node, code) {
                 continue;
+            }
+
+            let settings = query.property_settings(m.pattern_index);
+            let min_kernel_version = settings
+                .iter()
+                .find(|prop| prop.key.as_ref() == "min_kernel_version")
+                .and_then(|prop| prop.value.as_deref());
+            let min_kernel_version = min_kernel_version.map(str::parse::<Version>).transpose()?;
+
+            // Check that min kernel version from the lint is less than
+            // the user specified kernel version. If no version is specified
+            // for the lint, we default to running it.
+            if let (Some(min_kernel_version), Some(kernel_version)) =
+                (min_kernel_version, lint_opts.kernel_version)
+            {
+                if kernel_version < min_kernel_version {
+                    continue;
+                }
             }
 
             // SANITY: It would be a tree-sitter bug if the capture
@@ -217,6 +251,21 @@ where
     I: IntoIterator<Item = L>,
     L: AsRef<Lint> + 'l,
 {
+    lint_custom_opts(code, lints, &LintOpts::default())
+}
+
+/// Lint code using the provided set of lints with custom options.
+/// This function behaves the same as [`lint_custom`], but allows for
+/// additional configuration via a [`LintOpts`] object.
+pub fn lint_custom_opts<'l, I, L>(
+    code: &[u8],
+    lints: I,
+    lint_opts: &LintOpts,
+) -> Result<Vec<LintMatch>>
+where
+    I: IntoIterator<Item = L>,
+    L: AsRef<Lint> + 'l,
+{
     let mut parser = Parser::new();
     let () = parser
         .set_language(&LANGUAGE.into())
@@ -226,7 +275,7 @@ where
         .context("failed to provided source code")?;
     let mut results = Vec::new();
     for lint in lints {
-        let matches = lint_impl(&tree, code, lint.as_ref())?;
+        let matches = lint_impl(&tree, code, lint.as_ref(), lint_opts)?;
         let () = results.extend(matches);
     }
 
@@ -443,5 +492,120 @@ mod tests {
         "# };
         let matches = lint_custom(code.as_bytes(), [lint_foo()]).unwrap();
         assert_eq!(matches.len(), 6, "{matches:?}");
+    }
+
+    #[test]
+    fn kernel_version_out_of_scope() {
+        let lint_opts = LintOpts {
+            kernel_version: Some(Version(4, 7, 8)),
+            ..Default::default()
+        };
+        let code = indoc! { r#"
+            bar();
+        "# };
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                    (#set! "min_kernel_version" "5.2.0")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom_opts(code.as_bytes(), [lint], &lint_opts).unwrap();
+        assert_eq!(matches.len(), 0);
+    }
+
+    #[test]
+    fn kernel_version_in_scope() {
+        let lint_opts = LintOpts {
+            kernel_version: Some(Version(5, 7, 8)),
+            ..Default::default()
+        };
+        let code = indoc! { r#"
+            bar();
+        "# };
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                    (#set! "min_kernel_version" "5.2.0")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom_opts(code.as_bytes(), [lint], &lint_opts).unwrap();
+        assert_eq!(matches.len(), 1);
+    }
+
+    #[test]
+    fn kernel_version_equals_lint() {
+        let lint_opts = LintOpts {
+            kernel_version: Some(Version(5, 2, 0)),
+            ..Default::default()
+        };
+        let code = indoc! { r#"
+            bar();
+        "# };
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                    (#set! "min_kernel_version" "5.2.0")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom_opts(code.as_bytes(), [lint], &lint_opts).unwrap();
+        assert_eq!(matches.len(), 1);
+    }
+
+    #[test]
+    fn kernel_version_not_in_lint() {
+        let lint_opts = LintOpts {
+            kernel_version: Some(Version(5, 7, 8)),
+            ..Default::default()
+        };
+        let code = indoc! { r#"
+            bar();
+        "# };
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom_opts(code.as_bytes(), [lint], &lint_opts).unwrap();
+        assert_eq!(matches.len(), 1);
+    }
+
+    #[test]
+    fn kernel_version_default_with_lint_version() {
+        let code = indoc! { r#"
+            bar();
+        "# };
+        let lint = Lint {
+            name: "bar".to_string(),
+            code: indoc! { r#"
+                (call_expression
+                    function: (identifier) @function (#eq? @function "bar")
+                    (#set! "min_kernel_version" "5.2.0")
+                )
+            "# }
+            .to_string(),
+            message: "bar".to_string(),
+        };
+        let matches = lint_custom(code.as_bytes(), [lint]).unwrap();
+        assert_eq!(matches.len(), 1);
     }
 }

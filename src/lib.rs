@@ -33,7 +33,9 @@ mod lint;
 mod report;
 
 use std::ops;
+use std::str::FromStr;
 
+use anyhow::Context as _;
 
 /// A position in a multi-line text document, in terms of rows and columns.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -56,11 +58,55 @@ pub struct Range {
     pub end_point: Point,
 }
 
+/// Kernel version in form of (major, minor, patch) represented
+/// with a tuple.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Version(pub u8, pub u8, pub u8);
+
+impl FromStr for Version {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('.').collect();
+
+        if parts.len() != 3 {
+            anyhow::bail!(
+                "kernel version must be in format 'major.minor.patch' (e.g., '5.4.0'), got '{s}'"
+            );
+        }
+
+        let major = parts[0].parse::<u8>().with_context(|| {
+            format!(
+                "invalid major version: '{}' (must be a non-negative integer)",
+                parts[0]
+            )
+        })?;
+
+        let minor = parts[1].parse::<u8>().with_context(|| {
+            format!(
+                "invalid minor version: '{}' (must be a non-negative integer)",
+                parts[1]
+            )
+        })?;
+
+        let patch = parts[2].parse::<u8>().with_context(|| {
+            format!(
+                "invalid patch version: '{}' (must be a non-negative integer)",
+                parts[2]
+            )
+        })?;
+
+        Ok(Version(major, minor, patch))
+    }
+}
+
 pub use crate::lint::Lint;
 pub use crate::lint::LintMatch;
+pub use crate::lint::LintOpts;
 pub use crate::lint::builtin_lints;
 pub use crate::lint::lint;
 pub use crate::lint::lint_custom;
+pub use crate::lint::lint_custom_opts;
 pub use crate::report::terminal;
 
 
@@ -91,6 +137,7 @@ mod wasm {
                 extra_lines: (context, context),
                 ..Default::default()
             };
+            let lint_opts = LintOpts::default();
             let mut first = true;
             let mut report = Vec::new();
             let matches = lint(&code)?;
@@ -109,5 +156,37 @@ mod wasm {
         }
 
         lint_impl(code, PathBuf::from(path), context).map_err(|err| format!("{err:?}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_kernel_version_valid() {
+        let version = Version::from_str("5.4.0").unwrap();
+        assert_eq!((version.0, version.1, version.2), (5, 4, 0));
+
+        let version = Version::from_str("84.71.23").unwrap();
+        assert_eq!((version.0, version.1, version.2), (84, 71, 23));
+    }
+
+    #[test]
+    fn test_parse_kernel_version_invalid_parts() {
+        let version = Version::from_str("5.bfp.0");
+        assert!(version.is_err());
+    }
+
+    #[test]
+    fn test_parse_kernel_version_too_many_parts() {
+        let version = Version::from_str("5.1.0.9");
+        assert!(version.is_err());
+    }
+
+    #[test]
+    fn test_parse_kernel_version_too_few_parts() {
+        let version = Version::from_str("4.8");
+        assert!(version.is_err());
     }
 }
