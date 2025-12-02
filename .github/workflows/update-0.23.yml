@@ -18,9 +18,12 @@ jobs:
           fetch-depth: 0
       - name: Merge with origin/main
         shell: bash
+        env:
+          WORKFLOW_UPDATE: ${{ secrets.WORKFLOW_UPDATE }}
         run: |
           git config --global user.name 'GitHub Actions Automation'
           git config --global user.email 'ci_activity@noreply.github.com'
           git checkout tree-sitter-0.23
           git merge origin/main
+          git remote set-url origin https://x-access-token:${WORKFLOW_UPDATE}@github.com/${{ github.repository }}.git
           git push origin HEAD:refs/heads/tree-sitter-0.23
