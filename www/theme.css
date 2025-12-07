@@ -6,69 +6,131 @@
 
 /* Formatting styles */
 .bold {
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .warn {
-  color: #ff0000;
-  font-weight: bold;
+  color: #d73a49;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
 }
 
 .highlight {
-  color: #0066cc;
-  font-weight: bold;
+  color: #0066ff;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
 }
 
 /* Syntax highlighting styles (matching tree-sitter-highlight) */
 .hl-constant {
-  color: #795da3;
+  color: #6f42c1;
 }
 
 .hl-string {
-  color: #a71d5d;
+  color: #d73a49;
 }
 
 .hl-comment {
-  color: #969896;
+  color: #6a737d;
   font-style: italic;
 }
 
 .hl-function {
-  color: #0086b3;
+  color: #005cc5;
+  font-weight: 500;
 }
 
 .hl-keyword {
-  color: #a71d5d;
+  color: #d73a49;
+  font-weight: 500;
 }
 
 .hl-type {
-  color: #0086b3;
+  color: #005cc5;
+  font-weight: 500;
 }
 
 .hl-number {
-  color: #183691;
+  color: #005cc5;
 }
 
 .hl-operator {
-  color: #333333;
+  color: #24292e;
 }
 
 .hl-variable {
-  color: #333333;
+  color: #24292e;
 }
 
 .hl-property {
-  color: #0086b3;
+  color: #005cc5;
 }
 
 .hl-punctuation {
-  color: #333333;
+  color: #24292e;
 }
 
 .hl-tag {
-  color: #0086b3;
+  color: #22863a;
 }
 
 .hl-attribute {
-  color: #0086b3;
+  color: #005cc5;
+}
+
+/* Dark mode syntax highlighting */
+[data-theme="dark"] .hl-operator,
+[data-theme="dark"] .hl-variable,
+[data-theme="dark"] .hl-punctuation {
+  color: #e1e1e1;
+}
+
+[data-theme="dark"] .hl-constant {
+  color: #b392f0;
+}
+
+[data-theme="dark"] .hl-string {
+  color: #f97583;
+}
+
+[data-theme="dark"] .hl-comment {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .hl-function {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hl-keyword {
+  color: #ff7b72;
+}
+
+[data-theme="dark"] .hl-type {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hl-number {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hl-property {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hl-tag {
+  color: #7ee787;
+}
+
+[data-theme="dark"] .hl-attribute {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .warn {
+  color: #ff6b6b;
+}
+
+[data-theme="dark"] .highlight {
+  color: #79c0ff;
 }
