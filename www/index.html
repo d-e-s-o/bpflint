@@ -5,161 +5,138 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>bpflint</title>
+  <script>
+    // Apply saved theme immediately to prevent flash
+    const theme = localStorage.getItem('theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = theme;
+
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="theme.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    #fileInput {
-      margin-bottom: 10px;
-    }
-
-    #lintMessages {
-      width: 100%;
-      min-height: 400px;
-      margin-top: 10px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      border: 1px solid #ccc;
-      padding: 10px;
-      background-color: #ffffff;
-      overflow: auto;
-    }
-
-    .section {
-      display: grid;
-      grid-template-columns: 140px minmax(10em, 80em) 7em;
-      gap: 1em;
-      align-items: center;
-      margin-bottom: 1.5em;
-    }
-
-    .section label {
-      font-weight: bold;
-    }
-
-    .section input[type="text"] {
-      padding: 0.4em;
-      font-family: monospace;
-    }
-
-    .section button {
-      padding: 0.4em 1em;
-    }
-
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
-
-  </style>
 </head>
 
 <body>
-  <h1>bpflint</h1>
-  A linter for BPF C kernel code. Select either a local file or enter
-  the URL of a remote one to retrieve and lint.<br /><br />
+  <div class="container">
+    <div class="header">
+      <h1>bpflint</h1>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode">
+        <span class="sun">☀️</span>
+        <span class="moon">🌙</span>
+      </button>
+    </div>
+    <p class="subtitle">
+      A linter for BPF C kernel code. Select either a local file or enter
+      the URL of a remote one to retrieve and lint.
+    </p>
 
-  <div class="section">
-    <label for="filePath">Local file:</label>
-    <input type="text" id="filePath" placeholder="No file selected..." readonly />
-    <input type="file" id="fileInput" accept=".c,.cc,.cpp,.cxx,.h,.hpp" style="display: none" />
-    <button id="selectFileButton">Select</button>
+    <div class="section">
+      <label for="filePath">Local file:</label>
+      <input type="text" id="filePath" placeholder="No file selected..." readonly />
+      <input type="file" id="fileInput" accept=".c,.cc,.cpp,.cxx,.h,.hpp" style="display: none" />
+      <button id="selectFileButton">Select</button>
 
-    <label for="urlInput">Remote file:</label>
-    <input type="text" id="urlInput" value="https://raw.githubusercontent.com/d-e-s-o/bpflint/refs/heads/main/examples/task_longrun.bpf.c" />
-    <button id="fetchButton">Fetch</button>
+      <label for="urlInput">Remote file:</label>
+      <input type="text" id="urlInput" value="https://raw.githubusercontent.com/d-e-s-o/bpflint/refs/heads/main/examples/task_longrun.bpf.c" />
+      <button id="fetchButton">Fetch</button>
 
-    <label for="contextCnt">Context lines:</label>
-    <input type="number" id="contextCnt" min="0" max="255" step="1" value="2">
-  </div>
+      <label for="contextCnt">Context lines:</label>
+      <input type="number" id="contextCnt" min="0" max="255" step="1" value="2">
+    </div>
 
-  <div id="lintMessages">Lint messages will appear here...</div>
-  <div class="error" id="errorBox"></div>
+    <div id="lintMessages">Lint messages will appear here...</div>
+    <div class="error" id="errorBox"></div>
 
-  <script type="module">
-    import init, {
-      lint_html
-    } from './pkg/bpflint.js';
+    <script type="module">
+      import init, {
+        lint_html
+      } from './pkg/bpflint.js';
 
-    await init('./pkg/bpflint_bg.wasm');
+      await init('./pkg/bpflint_bg.wasm');
 
-    const fileInput = document.getElementById('fileInput');
-    const filePath = document.getElementById('filePath');
-    const contextCnt = document.getElementById('contextCnt');
-    const lintMessages = document.getElementById('lintMessages');
-    const selectFileButton = document.getElementById('selectFileButton');
+      const fileInput = document.getElementById('fileInput');
+      const filePath = document.getElementById('filePath');
+      const contextCnt = document.getElementById('contextCnt');
+      const lintMessages = document.getElementById('lintMessages');
+      const selectFileButton = document.getElementById('selectFileButton');
 
-    let code_ = null;
-    let path_ = null;
+      let code_ = null;
+      let path_ = null;
 
-    selectFileButton.addEventListener('click', () => {
-      fileInput.click();
-    });
+      selectFileButton.addEventListener('click', () => {
+        fileInput.click();
+      });
 
-    function lint(code, file) {
-      try {
-        const result = lint_html(code, file, contextCnt.value);
-        if (result != "") {
-          lintMessages.innerHTML = result;
-        } else {
-          lintMessages.textContent = "No problems detected";
+      function lint(code, file) {
+        try {
+          const result = lint_html(code, file, contextCnt.value);
+          if (result != "") {
+            lintMessages.innerHTML = result;
+          } else {
+            lintMessages.textContent = "No problems detected";
+          }
+          errorBox.textContent = '';
+        } catch (err) {
+          lintMessages.textContent = '';
+          errorBox.textContent = 'Failed to lint: ' + err;
         }
-        errorBox.textContent = '';
-      } catch (err) {
-        lintMessages.textContent = '';
-        errorBox.textContent = 'Failed to lint: ' + err;
       }
-    }
 
-    fetchButton.addEventListener('click', async () => {
-      const url = urlInput.value.trim();
-      if (!url) return;
+      fetchButton.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        if (!url) return;
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-        code_ = new TextEncoder().encode(await response.text());
-        path_ = url;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+          code_ = new TextEncoder().encode(await response.text());
+          path_ = url;
+          lint(code_, path_);
+        } catch (err) {
+          lintMessages.textContent = '';
+          errorBox.textContent = 'Error fetching file: ' + err.message;
+        }
+      })
+
+      fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        filePath.value = file.name;
+        // Reset value to trigger `change` event on subsequent selection.
+        fileInput.value = '';
+
+        path_ = file.name;
+        const reader = new FileReader();
+        reader.onload = () => {
+          code_ = new Uint8Array(reader.result);
+          lint(code_, path_);
+        };
+        reader.onerror = () => {
+          lintMessages.textContent = '';
+          errorBox.textContent = 'Error reading file: ' + reader.error;
+        };
+
+        reader.readAsArrayBuffer(file);
+      });
+
+      contextCnt.addEventListener('change', (event) => {
+        if (!code_ || !path_) return;
+
         lint(code_, path_);
-      } catch (err) {
-        lintMessages.textContent = '';
-        errorBox.textContent = 'Error fetching file: ' + err.message;
-      }
-    })
+      });
 
-    fileInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+      // Theme toggle
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        const html = document.documentElement;
+        const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+        html.dataset.theme = newTheme;
+        localStorage.setItem('theme', newTheme);
+      });
 
-      filePath.value = file.name;
-      // Reset value to trigger `change` event on subsequent selection.
-      fileInput.value = '';
-
-      path_ = file.name;
-      const reader = new FileReader();
-      reader.onload = () => {
-        code_ = new Uint8Array(reader.result);
-        lint(code_, path_);
-      };
-      reader.onerror = () => {
-        lintMessages.textContent = '';
-        errorBox.textContent = 'Error reading file: ' + reader.error;
-      };
-
-      reader.readAsArrayBuffer(file);
-    });
-
-    contextCnt.addEventListener('change', (event) => {
-      if (!code_ || !path_) return;
-
-      lint(code_, path_);
-    });
-
-  </script>
+    </script>
+  </div>
 </body>
 
 </html>
