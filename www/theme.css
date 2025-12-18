@@ -1,6 +1,5 @@
 /*
  * Theme for bpflint HTML output
- *
  */
 
 .bold {
@@ -53,11 +52,19 @@
   color: #8b949e;
 }
 
-.hl-function {
+.hl-function,
+.hl-type,
+.hl-number,
+.hl-property,
+.hl-attribute {
   color: #005cc5;
 }
 
-[data-theme="dark"] .hl-function {
+[data-theme="dark"] .hl-function,
+[data-theme="dark"] .hl-type,
+[data-theme="dark"] .hl-number,
+[data-theme="dark"] .hl-property,
+[data-theme="dark"] .hl-attribute {
   color: #79c0ff;
 }
 
@@ -67,22 +74,6 @@
 
 [data-theme="dark"] .hl-keyword {
   color: #ff7b72;
-}
-
-.hl-type {
-  color: #005cc5;
-}
-
-[data-theme="dark"] .hl-type {
-  color: #79c0ff;
-}
-
-.hl-number {
-  color: #005cc5;
-}
-
-[data-theme="dark"] .hl-number {
-  color: #79c0ff;
 }
 
 .hl-operator,
@@ -97,26 +88,10 @@
   color: #e1e1e1;
 }
 
-.hl-property {
-  color: #005cc5;
-}
-
-[data-theme="dark"] .hl-property {
-  color: #79c0ff;
-}
-
 .hl-tag {
   color: #22863a;
 }
 
 [data-theme="dark"] .hl-tag {
   color: #7ee787;
-}
-
-.hl-attribute {
-  color: #005cc5;
-}
-
-[data-theme="dark"] .hl-attribute {
-  color: #79c0ff;
 }
