@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.1.5
+-----
 - Added support for colored lint match reporting
 - Added `--color` argument to force colored/uncolored output
 - Added `-k`/`--kernel` argument for specifying (minimum) kernel version
