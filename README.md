@@ -40,7 +40,7 @@ C programs.
        provide statically linked `bpflinter` CLI binaries that can be
        downloaded from each `cli-vX.Y.Z` release and used directly on
        any Linux. E.g.,
-       https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.4/bpflinter-x86_64-unknown-linux-musl
+       https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.5/bpflinter-x86_64-unknown-linux-musl
 
 #### ❓ **Q: Our BPF code uses custom patterns, is enforcement possible?**
 **A:** Yes! The library allows for definition of custom lints via the
