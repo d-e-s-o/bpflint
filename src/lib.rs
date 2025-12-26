@@ -58,8 +58,7 @@ pub struct Range {
     pub end_point: Point,
 }
 
-/// Kernel version in form of (major, minor, patch) represented
-/// with a tuple.
+/// A version in the form of a (major, minor, patch) triple.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Version(pub u8, pub u8, pub u8);
 
@@ -71,7 +70,7 @@ impl FromStr for Version {
 
         if parts.len() != 3 {
             anyhow::bail!(
-                "kernel version must be in format 'major.minor.patch' (e.g., '5.4.0'), got '{s}'"
+                "version must be in format 'major.minor.patch' (e.g., '5.4.0'), got '{s}'"
             );
         }
 
@@ -184,8 +183,10 @@ mod wasm {
 mod tests {
     use super::*;
 
+
+    /// Make sure that we can parse valid version strings.
     #[test]
-    fn test_parse_kernel_version_valid() {
+    fn version_parsing_valid() {
         let version = Version::from_str("5.4.0").unwrap();
         assert_eq!((version.0, version.1, version.2), (5, 4, 0));
 
@@ -193,21 +194,66 @@ mod tests {
         assert_eq!((version.0, version.1, version.2), (84, 71, 23));
     }
 
+    /// Check for expected version parsing errors due to an invalid
+    /// number.
     #[test]
-    fn test_parse_kernel_version_invalid_parts() {
+    fn version_parsing_invalid() {
         let version = Version::from_str("5.bfp.0");
         assert!(version.is_err());
     }
 
+    /// Check for expected version parsing errors due to too many parts.
     #[test]
-    fn test_parse_kernel_version_too_many_parts() {
+    fn version_parsing_too_many_parts() {
         let version = Version::from_str("5.1.0.9");
         assert!(version.is_err());
     }
 
+    /// Check for expected version parsing errors due to too few parts.
     #[test]
-    fn test_parse_kernel_version_too_few_parts() {
+    fn version_parsing_too_few_parts() {
         let version = Version::from_str("4.8");
         assert!(version.is_err());
+    }
+
+    /// Check that version equality comparisons work as they should.
+    #[test]
+    fn version_equality() {
+        assert_eq!(Version(0, 0, 0), Version(0, 0, 0));
+        assert_eq!(Version(1, 1, 1), Version(1, 1, 1));
+
+        assert_ne!(Version(0, 0, 0), Version(0, 0, 1));
+        assert_ne!(Version(0, 0, 0), Version(0, 1, 0));
+        assert_ne!(Version(0, 0, 0), Version(1, 0, 0));
+        assert_ne!(Version(0, 0, 1), Version(0, 0, 0));
+        assert_ne!(Version(0, 1, 0), Version(0, 0, 0));
+        assert_ne!(Version(1, 0, 0), Version(0, 0, 0));
+    }
+
+    /// Make sure that versions can be ordered properly.
+    #[test]
+    fn version_ordering() {
+        let mut versions = [
+            Version(20, 20, 1),
+            Version(20, 1, 10),
+            Version(1, 1, 10),
+            Version(1, 1, 1),
+            Version(1, 1, 0),
+            Version(1, 0, 0),
+            Version(0, 0, 0),
+        ];
+
+        let () = versions.sort();
+
+        let expected = [
+            Version(0, 0, 0),
+            Version(1, 0, 0),
+            Version(1, 1, 0),
+            Version(1, 1, 1),
+            Version(1, 1, 10),
+            Version(20, 1, 10),
+            Version(20, 20, 1),
+        ];
+        assert_eq!(versions, expected);
     }
 }
