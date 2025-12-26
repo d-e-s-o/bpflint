@@ -4,6 +4,7 @@ Unreleased
 - Added `--color` argument to force colored/uncolored output
 - Added `-k`/`--kernel` argument for specifying (minimum) kernel version
   targeted
+- Updated `bpflint` dependency to `0.3.0`
 
 
 0.1.4

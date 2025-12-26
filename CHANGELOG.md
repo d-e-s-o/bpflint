@@ -1,5 +1,5 @@
-Unreleased
-----------
+0.3.0
+-----
 - Added `perfbuf-usage` lint
 - Added `unrolled-for-loop` lint
 - Introduced public `terminal` module with terminal related reporting
