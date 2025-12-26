@@ -117,6 +117,7 @@ body {
 
 [data-theme="dark"] .theme-toggle .sun {
   display: inline;
+  color: #ffcc33;
 }
 
 [data-theme="dark"] .theme-toggle .moon {
