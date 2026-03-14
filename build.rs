@@ -8,12 +8,16 @@ use std::fs::read_to_string;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
+#[cfg(feature = "deploy")]
+use std::process::Command;
 
 use anyhow::Context as _;
 use anyhow::Error;
 use anyhow::Result;
 #[cfg(feature = "deploy")]
 use anyhow::anyhow;
+#[cfg(feature = "deploy")]
+use anyhow::ensure;
 
 
 fn generate_lints(manifest_dir: &Path) -> Result<()> {
