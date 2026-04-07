@@ -34,11 +34,15 @@ asked in one of the existing issues (or a new one).
 
 #### ❓ **Q: I have a repository with BPF code, can I lint contributions easily?**
 **A:** If you are using GitHub Actions as the continuous integration
-solution of choice, you can add a separate job using the [`lint-bpf`
-Action][gh-action]. For other CI systems some manual plumbing will be
-necessary. We provide statically linked `bpflinter` CLI binaries that
-can be downloaded from each `cli-vX.Y.Z` release and used directly on
-any Linux. E.g.,
+solution of choice, you can use the contained GitHub Action to set up
+`bpflinter` and then invoke it:
+```yaml
+- uses: d-e-s-o/bpflint@main
+- run: bpflinter <your-file>.bpf.c
+```
+For other CI systems some manual plumbing will be necessary. We provide
+statically linked `bpflinter` CLI binaries that can be downloaded from
+each `cli-vX.Y.Z` release and used directly on any Linux. E.g.,
 https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.5/bpflinter-x86_64-unknown-linux-musl
 
 #### ❓ **Q: Our BPF code uses custom patterns, is enforcement possible?**
@@ -63,5 +67,4 @@ When encountered, the named lint will be disabled for the directly
 following item (block, statement, ...).
 
 [docs-rs]: https://docs.rs/bpflint/latest
-[gh-action]: https://github.com/d-e-s-o/lint-bpf
 [web-ui]: https://d-e-s-o.github.io/bpflint/

@@ -1,0 +1,42 @@
+name: Setup bpflinter
+description: Build (or restore from cache) the bpflinter binary and add it to PATH.
+branding:
+  icon: 'alert-triangle'
+  color: 'yellow'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Determine source hash
+      id: source-hash
+      shell: bash
+      run: |
+        hash=$(find "${{ github.action_path }}" \
+                     -type f -exec sha256sum {} + | sort | sha256sum | cut -d' ' -f1)
+        echo "hash=${hash}" >> "$GITHUB_OUTPUT"
+    - name: Restore cached bpflinter binary
+      id: cache
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.bpflint/bin
+        key: bpflinter-${{ runner.os }}-${{ steps.source-hash.outputs.hash }}
+    - name: Build bpflinter
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        cargo build \
+          --release \
+          --package bpflinter \
+          --manifest-path "${{ github.action_path }}/Cargo.toml" \
+          --target-dir "${{ runner.temp }}/bpflint-target"
+        mkdir -p ~/.bpflint/bin
+        cp "${{ runner.temp }}/bpflint-target/release/bpflinter" ~/.bpflint/bin/
+    - name: Save cached bpflinter binary
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.bpflint/bin
+        key: bpflinter-${{ runner.os }}-${{ steps.source-hash.outputs.hash }}
+    - name: Add bpflinter to PATH
+      shell: bash
+      run: echo "${HOME}/.bpflint/bin" >> "$GITHUB_PATH"
