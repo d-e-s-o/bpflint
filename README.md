@@ -25,42 +25,42 @@ C programs.
 ### 📚 Frequently Asked Questions (FAQ)
 
 #### ❓ **Q: I am interested in helping out. How can I get started?**
-**A:** We have a list of [issues](https://github.com/d-e-s-o/bpflint/issues)
-       with ideas for contributions, which mark a good starting point.
-       For documentation on lints specifically and how to add a new one,
-       please check out the [lints/](lints/) sub-directory. All other
-       questions are probably best asked in one of the existing issues
-       (or a new one).
+**A:** We have a list of
+[issues](https://github.com/d-e-s-o/bpflint/issues) with ideas for
+contributions, which mark a good starting point. For documentation on
+lints specifically and how to add a new one, please check out the
+[lints/](lints/) sub-directory. All other questions are probably best
+asked in one of the existing issues (or a new one).
 
 #### ❓ **Q: I have a repository with BPF code, can I lint contributions easily?**
 **A:** If you are using GitHub Actions as the continuous integration
-       solution of choice, you can add a separate job using the
-       [`lint-bpf` Action][gh-action].
-       For other CI systems some manual plumbing will be necessary. We
-       provide statically linked `bpflinter` CLI binaries that can be
-       downloaded from each `cli-vX.Y.Z` release and used directly on
-       any Linux. E.g.,
-       https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.5/bpflinter-x86_64-unknown-linux-musl
+solution of choice, you can add a separate job using the [`lint-bpf`
+Action][gh-action]. For other CI systems some manual plumbing will be
+necessary. We provide statically linked `bpflinter` CLI binaries that
+can be downloaded from each `cli-vX.Y.Z` release and used directly on
+any Linux. E.g.,
+https://github.com/d-e-s-o/bpflint/releases/download/cli-v0.1.5/bpflinter-x86_64-unknown-linux-musl
 
 #### ❓ **Q: Our BPF code uses custom patterns, is enforcement possible?**
 **A:** Yes! The library allows for definition of custom lints via the
-       `Lint` type. One or more instances of this type can then be
-       provided to the linter.
-       Please refer to the [`custom-lint`](examples/custom-lint.rs)
-       program for a fully working example.
+`Lint` type. One or more instances of this type can then be
+provided to the linter. Please refer to the
+[`custom-lint`](examples/custom-lint.rs) program for a fully working
+example.
 
 #### ❓ **Q: I got a false-positive, what can I do?**
 **A:** Some lints require context that is not possible or feasible for
-       the linter to acquire. E.g., `kprobe` attach point usage may be
-       flagged as being an unstable attach point, but the linter cannot
-       know whether a better alternative, say, in the form of a
-       tracepoint, exists. **bpflint** recognizes C comments of the
-       following form on blocks and statements:
-       ```
-       /* bpflint: disable=<lint-name> */
-       ```
-       When encountered, the named lint will be disabled for the
-       directly following item (block, statement, ...).
+the linter to acquire. E.g., `kprobe` attach point usage may be flagged
+as being an unstable attach point, but the linter cannot know whether a
+better alternative, say, in the form of a tracepoint, exists.
+**bpflint** recognizes C comments of the following form on blocks and
+statements:
+```c
+/* bpflint: disable=<lint-name> */
+foo();
+```
+When encountered, the named lint will be disabled for the directly
+following item (block, statement, ...).
 
 [docs-rs]: https://docs.rs/bpflint/latest
 [gh-action]: https://github.com/d-e-s-o/lint-bpf
