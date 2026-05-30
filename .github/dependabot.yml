@@ -7,9 +7,9 @@ updates:
     rebase-strategy: auto
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
   - package-ecosystem: cargo
     versioning-strategy: auto
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
