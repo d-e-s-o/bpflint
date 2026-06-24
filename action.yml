@@ -16,7 +16,7 @@ runs:
         echo "hash=${hash}" >> "$GITHUB_OUTPUT"
     - name: Restore cached bpflinter binary
       id: cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: ~/.bpflint/bin
         key: bpflinter-${{ runner.os }}-${{ steps.source-hash.outputs.hash }}
@@ -33,7 +33,7 @@ runs:
         cp "${{ runner.temp }}/bpflint-target/release/bpflinter" ~/.bpflint/bin/
     - name: Save cached bpflinter binary
       if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         path: ~/.bpflint/bin
         key: bpflinter-${{ runner.os }}-${{ steps.source-hash.outputs.hash }}
