@@ -115,7 +115,6 @@ mod wasm {
     use std::io::Write as _;
     use std::path::Path;
 
-    use anyhow::Context as _;
     use anyhow::Error;
 
     use wasm_bindgen::prelude::wasm_bindgen;
